@@ -1,6 +1,6 @@
 function setMask() {
     //设置遮罩
-    if (document.getElementsByClassName("rmMask")[0] != undefined)
+    if (document.getElementsByClassName("rmMask")[0] !== undefined)
         return document.getElementsByClassName("rmMask")[0];
     mask = document.createElement('div');
     mask.className = "rmMask";
@@ -28,7 +28,7 @@ function insertAtCursor(myField, myValue) {
     }
 
     //FireFox、Chrome等
-    else if (myField.selectionStart || myField.selectionStart == '0') {
+    else if (myField.selectionStart || myField.selectionStart === '0') {
         var startPos = myField.selectionStart;
         var endPos = myField.selectionEnd;
 
@@ -87,16 +87,36 @@ rmf.switchReadMode = function () {
     newEle.addEventListener('click', clickFn)
 }
 
-//复制选中文字
+// 复制选中文字
 rmf.copySelect = function () {
     document.execCommand('Copy', false, null);
 }
 
-//回到顶部
+// 回到顶部
 rmf.scrollToTop = function () {
     document.getElementsByClassName("menus_items")[1].setAttribute("style", "");
-    document.getElementById("name-container").setAttribute("style", "display:none");
+    document.getElementById("article-container").setAttribute("style", "display:none");
     btf.scrollToDest(0, 500);
+}
+
+
+rmf.activateThemeMode = () => {
+
+    activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+            document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+    }
+
+    activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+            document.querySelector('meta[name="theme-color"]').setAttribute('content', 'ffffff')
+        }
+    }
+
+    saveToLocal.get('theme') === 'dark' ? activateLightMode() : activateDarkMode();
 }
 
 document.body.addEventListener('touchmove', function () {
@@ -108,7 +128,7 @@ function popupMenu() {
         // if (event.ctrlKey) return true;
 
         // 当关掉自定义右键时候直接返回
-        if (mouseMode == "off") return true;
+        if (mouseMode === "off") return true;
 
         $('.rightMenu-group.hide').hide();
         if (document.getSelection().toString()) {
@@ -264,52 +284,35 @@ addLongtabListener(box, popupMenu)
 
 // 全屏
 rmf.fullScreen = function () {
-    if (document.fullscreenElement) document.exitFullscreen();
-    else document.documentElement.requestFullscreen();
+    document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
 }
 
 // 右键开关
-if (localStorage.getItem("mouse") == undefined) {
+if (localStorage.getItem("mouse") === undefined) {
     localStorage.setItem("mouse", "on");
 }
+
 var mouseMode = localStorage.getItem("mouse");
 
 function changeMouseMode() {
-    if (localStorage.getItem("mouse") == "on") {
-        mouseMode = "off";
-        localStorage.setItem("mouse", "off");
-        debounce(function () {
-            new Vue({
-                data: function () {
-                    this.$notify({
-                        title: "切换右键模式成功🍔",
-                        message: "当前鼠标右键已恢复为系统默认！",
-                        position: 'top-left',
-                        offset: 50,
-                        showClose: true,
-                        type: "success",
-                        duration: 5000
-                    });
-                }
-            })
-        }, 300);
-    } else {
-        mouseMode = "on";
-        localStorage.setItem("mouse", "on");
-        debounce(function () {
-            new Vue({
-                data: function () {
-                    this.$notify({
-                        title: "切换右键模式成功🍔",
-                        message: "当前鼠标右键已更换为网站指定样式！",
-                        position: 'top-left',
-                        offset: 50,
-                        showClose: true,
-                        type: "success",
-                        duration: 5000
-                    });
-                }
-            })
-        }, 300);
-    }
+    mouseMode = mouseMode === "on" ? "off" : "on";
+    localStorage.setItem("mouse", mouseMode);
+
+    var messages = mouseMode === "on" ? "当前鼠标右键已更换为网站指定样式！" : "当前鼠标右键已恢复为系统默认！";
+
+    debounce(function () {
+        new Vue({
+            data: function () {
+                this.$notify({
+                    title: "切换右键模式成功🍔",
+                    message: messages,
+                    position: 'top-left',
+                    offset: 50,
+                    showClose: true,
+                    type: "success",
+                    duration: 5000
+                });
+            }
+        })
+    }, 300);
 }
