@@ -1,5 +1,5 @@
 $(window).on('load', function() {
-    var element = document.querySelector(getElementAttribute($("#dynamic-color-text"), "on"))
+    var element = document.querySelector(getElementAttribute($("#subtitle"), "on"))
 
     if (element) {
         colorful(element);
@@ -71,9 +71,9 @@ var colorful = function(element) {
         setTimeout(startPrint, charDelay);
     }
     
-    var showText = "", texts = getElementAttribute($("#dynamic-color-text"), "texts") || "Hello-Welcome";
+    var showText = "", texts = getElementAttribute($("#subtitle"), "texts") || "Hello-Welcome";
     
-    var textArray = texts.split(getElementAttribute($("#dynamic-color-text"), "split") || "-").filter((item, index) => item.length != 0);
+    var textArray = texts.split(getElementAttribute($("#subtitle"), "split") || "-").filter((item, index) => item.length != 0);
     textArray = textArray.map(function(str) {
         return str + ""
     });
