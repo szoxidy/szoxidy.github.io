@@ -1,5 +1,5 @@
 // 动态标题
-var OriginTitle = document.title;
+var Origin_title = document.title;
 var titleTime;
 document.addEventListener('visibilitychange', function () {
     if (document.hidden) {
@@ -11,7 +11,7 @@ document.addEventListener('visibilitychange', function () {
         document.title = '🐖抓到你啦～';
         //两秒后变回正常标题
         titleTime = setTimeout(function () {
-            document.title = OriginTitle;
+            document.title = Origin_title;
         }, 2000);
     }
 });

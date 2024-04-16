@@ -26,6 +26,7 @@
 }
 
 /* 字体设置 */
+/* 文章代码格式 */
 @font-face {
     /* 为载入的字体取名字(随意) */
     font-family: 'JetBrains Mono Bold';
@@ -39,6 +40,7 @@
     font-display: block;
 }
 
+/* 博客字体样式 */
 @font-face {
     /* 为载入的字体取名字(随意) */
     font-family: '霞鹜文楷 GB';
