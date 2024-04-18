@@ -1,14 +1,13 @@
 $(window).on('load', function () {
-    var element = document.querySelector(getElementAttribute($("#subtitle"), "on"))
+
+    let element = document.querySelector(getElementAttribute($("#subtitle"), "on"));
 
     if (element) {
         colorful(element);
     }
-
 });
 
-
-var colorful = function (element) {
+let colorful = function (element) {
     if (element == null) {
         return;
     }
@@ -22,8 +21,9 @@ var colorful = function (element) {
     }
 
     function addEndChars(chars) {
-        for (var fragment = document.createDocumentFragment(), i = 0; chars > i; i++) {
-            var endChars = document.createElement("span");
+        let fragment = document.createDocumentFragment()
+        for (let i = 0; chars > i; i++) {
+            let endChars = document.createElement("span");
             endChars.textContent = getRandomChar();
             endChars.style.color = getRandomColor();
             fragment.appendChild(endChars);
@@ -32,7 +32,7 @@ var colorful = function (element) {
     }
 
     function startPrint() {
-        var startChars = textArray[sets.skillI];
+        const startChars = textArray[sets.skillI];
         if (sets.step) {
             sets.step--;
         } else {
@@ -72,13 +72,13 @@ var colorful = function (element) {
         setTimeout(startPrint, charDelay);
     }
 
-    var showText = "", texts = getElementAttribute($("#subtitle"), "texts") || "Hi.";
+    let showText = "", texts = getElementAttribute($("#subtitle"), "texts") || "Hi.";
 
-    var textArray = texts.split(getElementAttribute($("#subtitle"), "split") || "-").filter((item, index) => item.length != 0);
+    let textArray = texts.split(getElementAttribute($("#subtitle"), "split") || "-").filter((item, index) => item.length != 0);
     textArray = textArray.map(function (str) {
-        return str + "";
+        return str + ""
     });
-    var sentDelay = 2,
+    let sentDelay = 2,
         speed = 1,
         prefixEnd = 5,
         charDelay = 75,

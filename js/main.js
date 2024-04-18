@@ -198,7 +198,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   /**
-   * justified-gallery 圖庫排版
+   * justified-gallery 图库排版
    */
 
   const fetchUrl = async (url) => {
@@ -354,7 +354,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   /**
-   * 滾動處理
+   * 滚动处理
    */
   const scrollFn = () => {
     const $rightside = document.getElementById('rightside')

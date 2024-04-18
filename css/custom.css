@@ -31,7 +31,7 @@
     /* 为载入的字体取名字(随意) */
     font-family: 'JetBrains Mono Bold';
     /* 字体文件地址(相对或者绝对路径都可以) */
-    src: url(../font/JetBrainsMono-Bold.ttf);
+    src: url(https://cdn.jsdelivr.net/gh/szoxidy/CDN/web/common/font/JetBrainsMono-Bold.ttf);
     /* 定义加粗样式(加粗多少) */
     font-weight: normal;
     /* 定义字体样式(斜体/非斜体) */
@@ -45,7 +45,7 @@
     /* 为载入的字体取名字(随意) */
     font-family: '霞鹜文楷 GB';
     /* 字体文件地址(相对或者绝对路径都可以) */
-    src: url(../font/LXGWWenKaiGB-Bold.ttf);
+    src: url(https://cdn.jsdelivr.net/gh/szoxidy/CDN/web/common/font/LXGWWenKaiGB-Bold.ttf);
     /* 定义加粗样式(加粗多少) */
     font-weight: normal;
     /* 定义字体样式(斜体/非斜体) */

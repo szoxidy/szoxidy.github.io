@@ -1,38 +1,45 @@
-function createtime() {
+function createTime() {
+
     const now = new Date();
-    // 当前时间
-    now.setTime(now.getTime() + 1000);
+    now.setTime(now.getTime() + 1e3);
 
     const start = new Date("08/01/2022 00:00:00");
-    const dis = Math.trunc(23400000000 + ((now - start) / 1000) * 17);
-    const unit = (dis / 149600000).toFixed(6);
+    const dis = Math.trunc(234e8 + (now - start) / 1e3 * 17);
+    const unit = (dis / 1496e5).toFixed(6);
+
     const grt = new Date("11/16/2023 00:00:00");
+    const days = (now - grt) / 1e3 / 60 / 60 / 24;
+    const dnum = Math.floor(days);
 
-    let days = (now - grt) / 1e3 / 60 / 60 / 24,
-        dnum = Math.floor(days),
-        hours = (now - grt) / 1e3 / 60 / 60 - 24 * dnum,
-        hnum = Math.floor(hours);
+    const hours = (now - grt) / 1e3 / 60 / 60 - 24 * dnum;
+    const hnum = Math.floor(hours);
+    const formattedS = String(hnum).padStart(2, '0');
 
-    1 === String(hnum).length && (hnum = "0" + hnum);
+    const minutes = (now - grt) / 1e3 / 60 - 1440 * dnum - 60 * hnum;
+    const mnum = Math.floor(minutes);
+    const formattedL = String(mnum).padStart(2, '0');
 
-    var minutes = (now - grt) / 1e3 / 60 - 1440 * dnum - 60 * hnum,
-        mnum = Math.floor(minutes);
+    const seconds = (now - grt) / 1e3 - 86400 * dnum - 3600 * hnum - 60 * mnum;
+    const snum = Math.round(seconds);
+    const formattedB = String(snum).padStart(2, '0');
 
-    1 === String(mnum).length && (mnum = "0" + mnum);
-    var seconds = (now - grt) / 1e3 - 86400 * dnum - 3600 * hnum - 60 * mnum,
-
-        snum = Math.round(seconds);
-    1 == String(snum).length && (snum = "0" + snum);
     let currentTimeHtml = "";
-    (currentTimeHtml =
-        hnum < 18 && hnum >= 9
-            ? `<img class='boardsign' src='https://sourcebucket.s3.ladydaily.com/badge/F小屋-科研摸鱼中.svg' title='什么时候能够实现财富自由呀~'><br> <div style="font-size:13px;font-weight:bold">本站居然运行了 ${dnum} 天 ${hnum} 小时 ${mnum} 分 ${snum} 秒 <i id="heartbeat" class='fas fa-heartbeat'></i> <br> 旅行者 1 号当前距离地球 ${dis} 千米，约为 ${unit} 个天文单位 🚀</div>`
-            : `<img class='boardsign' src='https://sourcebucket.s3.ladydaily.com/badge/F小屋-下班休息啦.svg' title='下班了就该开开心心地玩耍~'><br> <div style="font-size:13px;font-weight:bold">本站居然运行了 ${dnum} 天 ${hnum} 小时 ${mnum} 分 ${snum} 秒 <i id="heartbeat" class='fas fa-heartbeat'></i> <br> 旅行者 1 号当前距离地球 ${dis} 千米，约为 ${unit} 个天文单位 🚀</div>`),
-    document.getElementById("workboard") &&
-    (document.getElementById("workboard").innerHTML = currentTimeHtml);
+    if (hnum < 22 && hnum >= 8) {
+        currentTimeHtml = `<img alt="" class='boardsign' src='https://img.shields.io/badge/本站点-营业中-6adea8?style=social&logo=php' title='距离百年老站也就差不到一百年~'>
+                            <br> 
+                            <div style="font-size:13px;font-weight:bold">本站居然运行了 ${dnum} 天 ${formattedS} 小时 ${formattedL} 分 ${formattedB} 秒 
+                                <hours class='fas fa-heartbeat' id="heartbeat"></hours> 
+                                <br> 旅行者 1 号当前距离地球 ${dis} 千米，约为 ${unit} 个天文单位 🚀
+                            </div>`;
+    } else {
+        currentTimeHtml = `<img class='boardsign' src='https://img.shields.io/badge/本站点-打烊了-6adea8?style=social&logo=apache' title='这个点了应该去睡觉啦，熬夜对身体不好哦' alt=""><br> <div style="font-size:13px;font-weight:bold">本站居然运行了 ${dnum} 天 ${formattedS} 小时 ${formattedL} 分 ${formattedB} 秒 <hours id="heartbeat" class='fas fa-heartbeat'></hours> <br> 旅行者 1 号当前距离地球 ${dis} 千米，约为 ${unit} 个天文单位 🚀</div>`;
+    }
+    const workboard = document.getElementById("workboard");
+    if (workboard) {
+        workboard.innerHTML = currentTimeHtml;
+    }
 }
 
-// 设置重复执行函数，周期1000ms
 setInterval(() => {
-    createtime();
+    createTime();
 }, 1000);
