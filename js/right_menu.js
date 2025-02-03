@@ -95,8 +95,10 @@ rmf.copySelect = function () {
 
 // 回到顶部
 rmf.scrollToTop = function () {
-    document.getElementsByClassName("menus_items")[1].setAttribute("style", "");
-    document.getElementById("article-container").setAttribute("style", "display:none");
+    if (document.getElementsByClassName("menus_items")[1])
+        document.getElementsByClassName("menus_items")[1].setAttribute("style", "");
+    if (document.getElementById("article-container"))
+        document.getElementById("article-container").setAttribute("style", "display:none");
     btf.scrollToDest(0);
 }
 
