@@ -60,13 +60,18 @@ let colorful = function (element) {
                         sets.text = sets.text.slice(0, -1);
                         sets.skillP--;
                     } else {
-                        sets.skillI = (sets.skillI + 1) % textArray.length;
-                        sets.direction = "forward";
+                        setTimeout(function() {
+                            sets.skillI = (sets.skillI + 1) % textArray.length;
+                            sets.direction = "forward";
+                            startPrint();  // 重新调用 startPrint 开始新的循环
+                        }, 500);
+                        return;  // 避免继续调用后面的 setTimeout(startPrint, charDelay)
                     }
                 }
             }
         }
         element.textContent = sets.text;
+
         element.appendChild(addEndChars(sets.prefixP < showText.length ? Math.min(prefixEnd, prefixEnd + sets.prefixP) : Math.min(prefixEnd, startChars.length - sets.skillP)));
 
         setTimeout(startPrint, charDelay);
@@ -78,7 +83,7 @@ let colorful = function (element) {
     textArray = textArray.map(function (str) {
         return str + ""
     });
-    let sentDelay = 2,
+    let sentDelay = 10,
         speed = 1,
         prefixEnd = 5,
         charDelay = 75,
