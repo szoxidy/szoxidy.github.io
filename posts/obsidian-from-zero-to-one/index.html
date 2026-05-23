@@ -1,0 +1,433 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>Obsidian 从零到一：我是怎么把写作和 iCloud 同步慢慢跑通的 | SZOXIDY</title><meta name="author" content="压轴戏"><meta name="copyright" content="压轴戏"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="从安卓和 Windows 上的能写就行，到 iPhone 和 iPad 带来的兼容问题，再到接触 Obsidian、理解 Vault、敲定 iCloud，同步这件事我是怎么一步步想明白的。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Obsidian 从零到一：我是怎么把写作和 iCloud 同步慢慢跑通的">
+<meta property="og:url" content="https://www.blog.szoxidy.com/posts/obsidian-from-zero-to-one/index.html">
+<meta property="og:site_name" content="SZOXIDY">
+<meta property="og:description" content="从安卓和 Windows 上的能写就行，到 iPhone 和 iPad 带来的兼容问题，再到接触 Obsidian、理解 Vault、敲定 iCloud，同步这件事我是怎么一步步想明白的。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://pic2.ziyuan.wang/user/SZOXIDY/2024/03/3_d13a7d76544e8.png">
+<meta property="article:published_time" content="2026-05-02T02:30:00.000Z">
+<meta property="article:modified_time" content="2026-05-02T06:20:00.000Z">
+<meta property="article:author" content="压轴戏">
+<meta property="article:tag" content="Obsidian">
+<meta property="article:tag" content="iCloud">
+<meta property="article:tag" content="Windows">
+<meta property="article:tag" content="iPhone">
+<meta property="article:tag" content="iPad">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://pic2.ziyuan.wang/user/SZOXIDY/2024/03/3_d13a7d76544e8.png"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Obsidian 从零到一：我是怎么把写作和 iCloud 同步慢慢跑通的",
+  "url": "https://www.blog.szoxidy.com/posts/obsidian-from-zero-to-one/",
+  "image": "https://pic2.ziyuan.wang/user/SZOXIDY/2024/03/3_d13a7d76544e8.png",
+  "datePublished": "2026-05-02T02:30:00.000Z",
+  "dateModified": "2026-05-02T06:20:00.000Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "压轴戏",
+      "url": "https://www.blog.szoxidy.com"
+    }
+  ]
+}</script><link rel="shortcut icon" href="https://q1.qlogo.cn/g?b=qq&nk=2847005463&s=640"><link rel="canonical" href="https://www.blog.szoxidy.com/posts/obsidian-from-zero-to-one/index.html"><link rel="preconnect" href="//cdnjs.cloudflare.com"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/node-snackbar/0.1.16/snackbar.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fancyapps-ui/6.1.9/fancybox/fancybox.min.css" media="print" onload="this.media='all'"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简"},
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":230,"highlightFullpage":false,"highlightMacStyle":true},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: {"chs_to_cht":"已切换为繁体中文","cht_to_chs":"已切换为简体中文","day_to_night":"已切换为深色模式","night_to_day":"已切换为浅色模式","bgLight":"#49b1f5","bgDark":"#1f1f1f","position":"top-left"},
+  infinitegrid: {
+    js: 'https://cdnjs.cloudflare.com/ajax/libs/egjs-infinitegrid/4.13.0/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: true,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Obsidian 从零到一：我是怎么把写作和 iCloud 同步慢慢跑通的',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><link rel="stylesheet" href="/css/readPercent.css"><link rel="stylesheet" href="/css/custom.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/v4-shims.min.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/element-ui/2.15.6/theme-chalk/index.min.css" media="print" onload="this.media='all'"><!-- hexo injector head_end start --><link rel="stylesheet" href="https://asset.szoxidy.com/web/css/runtime.css" media="print" onload="this.media='all'"><!-- hexo injector head_end end --><meta name="generator" content="Hexo 7.3.0"></head><body><div class="bg-animation" id="web_bg" style="background-image: url(https://pic2.ziyuan.wang/user/SZOXIDY/2024/03/1_38233585664eb.png);"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://q1.qlogo.cn/g?b=qq&amp;nk=2847005463&amp;s=640" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">2</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">5</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">1</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background: transparent;"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">SZOXIDY</span></a><a class="nav-page-title" href="/"><span class="site-name">Obsidian 从零到一：我是怎么把写作和 iCloud 同步慢慢跑通的</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">Obsidian 从零到一：我是怎么把写作和 iCloud 同步慢慢跑通的</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-05-02T02:30:00.000Z" title="发表于 2026-05-02 10:30:00">2026-05-02</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-05-02T06:20:00.000Z" title="更新于 2026-05-02 14:20:00">2026-05-02</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%95%88%E7%8E%87%E5%B7%A5%E5%85%B7/">效率工具</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><div id="post-outdate-notice" data="{&quot;limitDay&quot;:365,&quot;messagePrev&quot;:&quot;It has been&quot;,&quot;messageNext&quot;:&quot;days since the last update, the content of the article may be outdated.&quot;,&quot;postUpdate&quot;:&quot;2026-05-02 14:20:00&quot;}" hidden></div><p>最开始，我找笔记软件的标准其实很低。</p>
+<p>能写，能存，别太卡，换台设备还能继续写，就够了。</p>
+<p>那时候我主要在安卓和 Windows 上用，虽然谈不上多优雅，但至少还能用。真正把我逼着换思路的，不是写作本身，而是后来设备里多了 <code>iPhone</code> 和 <code>iPad</code> 以后，原来那套东西开始不兼容了。</p>
+<p>不是这里不顺，就是那里接不上。不是同步别扭，就是换设备以后还得重新折腾。</p>
+<p>也是从那时候开始，我才真正接触到 <code>Obsidian</code>。</p>
+<p>这篇文章不打算写成“功能百科”，也不打算一上来就聊双链、图谱、插件市场。我想写的，是我自己这一路最真实的过程: 为什么会开始折腾，为什么最后选了 Obsidian，为什么又把同步方案定成了 <code>iCloud</code>，以及 Windows 端到底是怎么配通的。</p>
+<blockquote>
+<p>我不是为了“第二大脑”去找 Obsidian 的。<br>我只是想把字安安稳稳写下去。</p>
+</blockquote>
+<h2 id="起因"><a href="#起因" class="headerlink" title="起因"></a>起因</h2><p>一开始，我的使用场景其实很简单。</p>
+<p>电脑上写一点，手机上记一点，想到什么就补什么。安卓和 Windows 阶段，这件事虽然也不算特别丝滑，但至少没把问题逼到台前。</p>
+<p>可当 <code>iPhone</code> 和 <code>iPad</code> 加进来以后，问题就开始变得很具体了。</p>
+<p>我慢慢发现，很多工具在“单设备写作”这件事上都没什么问题，但一到“多设备同步”就会露底。尤其当设备跨了不同系统以后，原本看起来没什么毛病的方案，突然就没那么顺了。</p>
+<p>到这里我才意识到，我真正缺的已经不是一个“能打字的工具”，而是一套能把内容稳定带到不同设备上的方案。</p>
+<h2 id="接触-Obsidian"><a href="#接触-Obsidian" class="headerlink" title="接触 Obsidian"></a>接触 Obsidian</h2><p>第一次接触 <code>Obsidian</code> 的时候，我其实也没觉得它有多神。</p>
+<p>网上很多人都在讲它自由、强大、适合搭知识库，甚至会把它说得很玄。但这些东西对当时的我都不是重点，因为我那时候最关心的只有两件事:</p>
+<ol>
+<li>它能不能让我老老实实写东西。</li>
+<li>它能不能帮我把多端这件事理顺。</li>
+</ol>
+<p>后来我才慢慢发现，Obsidian 真正重要的地方，不是“功能多”，而是“底层逻辑很清楚”。</p>
+<h2 id="先把-Obsidian-理解对"><a href="#先把-Obsidian-理解对" class="headerlink" title="先把 Obsidian 理解对"></a>先把 Obsidian 理解对</h2><p>如果现在让我用一句话解释 Obsidian，我会这样说:</p>
+<blockquote>
+<p>Obsidian 不是一套先有云、再有笔记的产品。<br>它更像是一个专门管理本地 Markdown 文件夹的写作工具。</p>
+</blockquote>
+<p>这句话看起来平平无奇，但我后来回头看，很多坑其实都是因为一开始没把这件事理解透。</p>
+<p>Obsidian 里经常会提到一个词，叫 <code>Vault</code>，中文一般翻译成“仓库”。</p>
+<p>可这个词别想复杂了。所谓仓库，说白了就是一个文件夹。你的笔记、附件、图片、配置，基本都在这个文件夹里。</p>
+<p>这件事一旦想明白，后面很多问题就清楚了。</p>
+<ol>
+<li>你不是在“登录一个账号查看笔记”。</li>
+<li>你是在“打开同一个文件夹”。</li>
+<li>真正决定多端能不能一致的，不是界面，而是这个文件夹有没有被稳定同步。</li>
+</ol>
+<p>所以到这里，问题就从“我该用什么笔记软件”，慢慢变成了“我该怎么同步这个仓库”。</p>
+<h2 id="同步方案，我看了不少，最后还是落回了-iCloud"><a href="#同步方案，我看了不少，最后还是落回了-iCloud" class="headerlink" title="同步方案，我看了不少，最后还是落回了 iCloud"></a>同步方案，我看了不少，最后还是落回了 iCloud</h2><p>那段时间我确实看了不少方案。</p>
+<p><code>Obsidian Sync</code> 是官方方案，逻辑完整，体验也更省心。<br><code>Git</code> 很强，适合想保留版本记录的人。<br>像 <code>OneDrive</code>、<code>Google Drive</code>、<code>Syncthing</code> 这些，也都不是没人用。</p>
+<p>但我后来越想越明白，我不能只看“理论上哪种最强”，而是要看“哪种最适合我现在这套设备”。</p>
+<p>我当时的情况其实是这样的:</p>
+<ol>
+<li>过去主要在安卓和 Windows 上写。</li>
+<li>后来设备重心逐渐转到 <code>iPhone</code> 和 <code>iPad</code>。</li>
+<li>真正让我不舒服的地方，主要也出在苹果端。</li>
+</ol>
+<p>所以最后我的判断很直接: 既然问题主要出在苹果设备上，那同步方案就优先围着苹果端来想。</p>
+<p>于是我最后敲定的是 <code>iCloud</code>。</p>
+<blockquote>
+<p>我最后选 iCloud，不是因为它“最强”。<br>而是因为在我当时的设备结构里，它最顺手。</p>
+</blockquote>
+<p>这里还得补一句实话。</p>
+<p>截至 <code>2026-05-02</code>，Obsidian 官方文档对 <code>iCloud Drive on Windows</code> 的态度其实是偏保守的，明确提醒过它可能出现重复文件或文件损坏的问题。所以这并不是一套“官方最推荐的全平台方案”，而是我结合自己设备重心之后，权衡出来的一条路。</p>
+<p>换句话说，这套方案更像是:</p>
+<p><code>iPhone + iPad + Windows</code></p>
+<p>而不是一套专门为了照顾安卓去设计的终极多端同步方案。</p>
+<h2 id="真正的转折点，不是装软件，而是把“仓库放哪”想明白"><a href="#真正的转折点，不是装软件，而是把“仓库放哪”想明白" class="headerlink" title="真正的转折点，不是装软件，而是把“仓库放哪”想明白"></a>真正的转折点，不是装软件，而是把“仓库放哪”想明白</h2><p>这一点我后来觉得特别关键。</p>
+<p>我一开始也以为，先在 Windows 上建个文件夹，再想办法让手机和平板也去读它，不就行了吗？</p>
+<p>后来发现不是这么回事。</p>
+<p>如果你决定走 <code>iCloud</code> 这条路，更稳妥的思路应该反过来:</p>
+<ol>
+<li>先在 <code>iPhone</code> 或 <code>iPad</code> 上创建仓库。</li>
+<li>仓库位置直接放到 <code>iCloud Drive/Obsidian/仓库名</code>。</li>
+<li>再让其他设备去打开这个已经存在的仓库。</li>
+</ol>
+<p>这一步看着不起眼，实际上非常重要。</p>
+<p>因为一旦仓库从一开始就放错地方，后面很多所谓“同步问题”，其实都是前面位置选错留下来的后遗症。</p>
+<blockquote>
+<p>先把仓库放对地方。<br>再去谈怎么同步。</p>
+</blockquote>
+<p>这个顺序不能反。</p>
+<h2 id="Windows-端到底是怎么接进来的"><a href="#Windows-端到底是怎么接进来的" class="headerlink" title="Windows 端到底是怎么接进来的"></a>Windows 端到底是怎么接进来的</h2><p>苹果端把仓库放进 <code>iCloud Drive</code> 以后，Windows 这边其实就不是“重新建一个仓库”，而是“把同一个仓库接进来”。</p>
+<p>我后来真正跑通，大概就是下面这个过程。</p>
+<h3 id="第一步，先装-iCloud-for-Windows"><a href="#第一步，先装-iCloud-for-Windows" class="headerlink" title="第一步，先装 iCloud for Windows"></a>第一步，先装 <code>iCloud for Windows</code></h3><p>这一步没什么花样，老老实实按 Apple 的方式来就行:</p>
+<ol>
+<li>从 <code>Microsoft Store</code> 安装 <code>iCloud for Windows</code></li>
+<li>登录和 <code>iPhone</code>、<code>iPad</code> 一样的 <code>Apple ID</code></li>
+<li>打开 <code>iCloud Drive</code></li>
+</ol>
+<p>这一阶段我不建议自己手动模拟什么路径，也不建议先在别的盘里建一个“看起来像仓库”的文件夹顶上去。</p>
+<p>先把 <code>iCloud Drive</code> 本身接通，比什么都重要。</p>
+<h3 id="第二步，去资源管理器里找到那个仓库"><a href="#第二步，去资源管理器里找到那个仓库" class="headerlink" title="第二步，去资源管理器里找到那个仓库"></a>第二步，去资源管理器里找到那个仓库</h3><p>装好以后，Windows 资源管理器左侧一般会出现 <code>iCloud Drive</code>。</p>
+<p>然后你要找的，不是什么自己想象出来的目录，而是:</p>
+<p><code>iCloud Drive/Obsidian/你的仓库名</code></p>
+<p>很多人刚开始会纠结路径到底在 <code>C</code> 盘还是 <code>D</code> 盘，或者为什么自己看到的层级和别人不太一样。</p>
+<p>但说实话，比起盘符，更重要的是你打开的是不是 <strong>同一个 iCloud Drive 里的同一个仓库目录</strong>。</p>
+<p>所以对新手来说，我更建议直接从资源管理器左侧的 <code>iCloud Drive</code> 入口进去找，不要一开始就执着于绝对路径。</p>
+<h3 id="第三步，把整个仓库设成“始终保留在此设备上”"><a href="#第三步，把整个仓库设成“始终保留在此设备上”" class="headerlink" title="第三步，把整个仓库设成“始终保留在此设备上”"></a>第三步，把整个仓库设成“始终保留在此设备上”</h3><p>这一步是我后来最想单独拿出来强调的一步。</p>
+<p>如果仓库只是“云端有”，而不是“本地已经完整落下来”，那你写的时候其实很难完全放心。尤其 <code>Obsidian</code> 的仓库里通常有很多 Markdown 文件、配置文件、图片附件，本地常驻会让整件事安心很多。</p>
+<p>我当时的做法就是:</p>
+<ol>
+<li>打开资源管理器</li>
+<li>进入 <code>iCloud Drive</code></li>
+<li>找到 Obsidian 的整个仓库文件夹</li>
+<li>右键</li>
+<li>选择 <code>始终保留在此设备上</code></li>
+</ol>
+<p>如果你用的是 <code>Windows 11</code> 的新版右键菜单，有时候还要先点一下 <code>显示更多选项</code>，才能看到 iCloud 相关命令。</p>
+<p>Apple 官方文档里也提到了 <code>Always keep on this device</code> 这个功能，所以这一步不是“民间偏方”，而是确实值得开的设置。</p>
+<blockquote>
+<p>如果你决定在 Windows 上配合 iCloud 用 Obsidian，<br>最好确保仓库不是“看得到”，而是“已经真的在本地”。</p>
+</blockquote>
+<h3 id="第四步，在-Windows-版-Obsidian-里打开这个仓库"><a href="#第四步，在-Windows-版-Obsidian-里打开这个仓库" class="headerlink" title="第四步，在 Windows 版 Obsidian 里打开这个仓库"></a>第四步，在 Windows 版 Obsidian 里打开这个仓库</h3><p>前面都确认好以后，再打开 Windows 版 Obsidian，选择:</p>
+<p><code>Open folder as vault</code></p>
+<p>然后去打开刚才那个 <code>iCloud Drive</code> 里的仓库目录。</p>
+<p>到这里，Windows 端才算真正接进来。</p>
+<h2 id="折腾到这里，我才慢慢把几件事想明白"><a href="#折腾到这里，我才慢慢把几件事想明白" class="headerlink" title="折腾到这里，我才慢慢把几件事想明白"></a>折腾到这里，我才慢慢把几件事想明白</h2><p>这一段过程走完以后，我对 Obsidian 的理解其实比刚开始清楚多了。</p>
+<h3 id="1-同步是同步，写作是写作"><a href="#1-同步是同步，写作是写作" class="headerlink" title="1. 同步是同步，写作是写作"></a>1. 同步是同步，写作是写作</h3><p>Obsidian 负责的是写作体验、结构组织、检索和管理。<br>至于同一个仓库怎么从一台设备到另一台设备，那是同步方案负责的事。</p>
+<p>这两层分开想，很多问题就不会搅在一起。</p>
+<h3 id="2-不要一上来就折腾插件"><a href="#2-不要一上来就折腾插件" class="headerlink" title="2. 不要一上来就折腾插件"></a>2. 不要一上来就折腾插件</h3><p>Obsidian 很容易让新手犯一个错误: 还没用顺，就开始装一堆插件、改主题、配模板、玩样式。</p>
+<p>这些东西当然都可以折腾，但如果同步还没跑稳，你越早加东西，越容易把问题搞复杂。</p>
+<p>我后来反而觉得，更合理的顺序应该是:</p>
+<ol>
+<li>先把仓库位置放对</li>
+<li>先把同步链路跑通</li>
+<li>先稳定写一段时间</li>
+<li>再慢慢加插件和工作流</li>
+</ol>
+<h3 id="3-不要混用多套同步"><a href="#3-不要混用多套同步" class="headerlink" title="3. 不要混用多套同步"></a>3. 不要混用多套同步</h3><p>同一个仓库，最好只走一套同步方案。</p>
+<p>如果你一边走 <code>iCloud</code>，一边又想叠别的网盘、版本工具或者同步服务，最后真出了问题，排查起来会非常难受。</p>
+<h3 id="4-备份这件事，永远不亏"><a href="#4-备份这件事，永远不亏" class="headerlink" title="4. 备份这件事，永远不亏"></a>4. 备份这件事，永远不亏</h3><p>因为 Obsidian 本质上就是一个文件夹，所以备份反而非常直接。你完全可以定期把仓库复制一份，或者打个压缩包。这样哪怕同步哪天出点小问题，至少原始文件还在自己手里。</p>
+<h2 id="到最后，我真正得到的其实不是“会用-Obsidian”"><a href="#到最后，我真正得到的其实不是“会用-Obsidian”" class="headerlink" title="到最后，我真正得到的其实不是“会用 Obsidian”"></a>到最后，我真正得到的其实不是“会用 Obsidian”</h2><p>更准确一点说，我是终于把下面这件事想通了:</p>
+<blockquote>
+<p>Obsidian 难的从来不是“怎么写”。<br>真正难的是“仓库放哪、怎么同步、哪一层负责什么”。</p>
+</blockquote>
+<p>这一点想明白以后，后面的很多问题都会简单很多。</p>
+<p>我后来再回头看这段过程，路径其实很清楚:</p>
+<p>安卓和 Windows 阶段还能凑合写<br>到了 <code>iPhone</code> 和 <code>iPad</code> 开始觉得不顺<br>开始找替代方案<br>接触到 <code>Obsidian</code><br>一开始没看懂<br>慢慢理解 <code>Vault</code> 和同步其实是两回事<br>最后把方案定在 <code>iCloud</code><br>再把 Windows 的路径、本地保留、仓库接入这些细节一点点配好<br>最后真正把这套链路跑通</p>
+<p>这才是我理解里的“从零到一”。</p>
+<p>不是一上来把 Obsidian 玩得多高级，而是先把最基础、也最关键的那一步走通: 同一个仓库，在不同设备上都能安稳地打开、继续写、继续用。</p>
+<h2 id="最后"><a href="#最后" class="headerlink" title="最后"></a>最后</h2><p>如果你现在也和我当时一样，只是想找一套能让写作安稳落地的方案，那我会建议你先别急着把 Obsidian 用复杂。</p>
+<p>先把这三个问题想明白:</p>
+<ol>
+<li>你的仓库放哪</li>
+<li>你准备用什么同步</li>
+<li>你能不能确认这个仓库真的落到了本地</li>
+</ol>
+<p>这三件事一旦想明白，Obsidian 才会真正开始变得顺手。</p>
+<blockquote>
+<p>软件本身不难。<br>难的是第一次把整套链路想清楚。<br>可一旦想清楚了，后面很多事就顺了。</p>
+</blockquote>
+<h2 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://obsidian.md/help/sync-notes">Obsidian 官方文档: Sync your notes across devices</a></li>
+<li><a target="_blank" rel="noopener" href="https://obsidian.md/help/ios">Obsidian 官方文档: Obsidian for iOS and iPadOS</a></li>
+<li><a target="_blank" rel="noopener" href="https://support.apple.com/zh-cn/HT208684">Apple 官方文档: Set up iCloud for Windows on your PC</a></li>
+<li><a target="_blank" rel="noopener" href="https://support.apple.com/guide/icloud-windows/keep-files-downloaded-icw8531ad6b7/icloud">Apple 官方文档: Keep iCloud Drive files downloaded on your Windows computer</a></li>
+</ul>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://www.blog.szoxidy.com">压轴戏</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://www.blog.szoxidy.com/posts/obsidian-from-zero-to-one/">https://www.blog.szoxidy.com/posts/obsidian-from-zero-to-one/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://www.blog.szoxidy.com" target="_blank">SZOXIDY</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/Obsidian/">Obsidian</a><a class="post-meta__tags" href="/tags/iCloud/">iCloud</a><a class="post-meta__tags" href="/tags/Windows/">Windows</a><a class="post-meta__tags" href="/tags/iPhone/">iPhone</a><a class="post-meta__tags" href="/tags/iPad/">iPad</a></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related full-width" href="/posts/%E7%AC%AC%E4%B8%80%E7%AF%87%E6%96%87%E7%AB%A0/" title="第一篇文章"><img class="cover" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://pic2.ziyuan.wang/user/SZOXIDY/2024/03/4_cfed389d0300e.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">第一篇文章</div></div><div class="info-2"><div class="info-item-1">这是我的第一篇文章</div></div></div></a></nav><hr class="custom-hr"/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div></div><div class="comment-wrap"><div><div id="twikoo-wrap"></div></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://q1.qlogo.cn/g?b=qq&amp;nk=2847005463&amp;s=640" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">压轴戏</div><div class="author-info-description">欲寄彩笺兼尺素，山长水阔知何处</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">2</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">5</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">1</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/szoxidy"><i class="fab fa-github"></i><span>Go To Github</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/szoxidy" target="_blank" title="Github"><i class="fab fa-github" style="color: #24292e;"></i></a><a class="social-icon" href="mailto:szoxidy@gmail.com" target="_blank" title="Email"><i class="fas fa-envelope" style="color: #4a7dbe;"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">欢迎来到我的博客</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%B5%B7%E5%9B%A0"><span class="toc-number">1.</span> <span class="toc-text">起因</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%8E%A5%E8%A7%A6-Obsidian"><span class="toc-number">2.</span> <span class="toc-text">接触 Obsidian</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%88%E6%8A%8A-Obsidian-%E7%90%86%E8%A7%A3%E5%AF%B9"><span class="toc-number">3.</span> <span class="toc-text">先把 Obsidian 理解对</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%90%8C%E6%AD%A5%E6%96%B9%E6%A1%88%EF%BC%8C%E6%88%91%E7%9C%8B%E4%BA%86%E4%B8%8D%E5%B0%91%EF%BC%8C%E6%9C%80%E5%90%8E%E8%BF%98%E6%98%AF%E8%90%BD%E5%9B%9E%E4%BA%86-iCloud"><span class="toc-number">4.</span> <span class="toc-text">同步方案，我看了不少，最后还是落回了 iCloud</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%9C%9F%E6%AD%A3%E7%9A%84%E8%BD%AC%E6%8A%98%E7%82%B9%EF%BC%8C%E4%B8%8D%E6%98%AF%E8%A3%85%E8%BD%AF%E4%BB%B6%EF%BC%8C%E8%80%8C%E6%98%AF%E6%8A%8A%E2%80%9C%E4%BB%93%E5%BA%93%E6%94%BE%E5%93%AA%E2%80%9D%E6%83%B3%E6%98%8E%E7%99%BD"><span class="toc-number">5.</span> <span class="toc-text">真正的转折点，不是装软件，而是把“仓库放哪”想明白</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Windows-%E7%AB%AF%E5%88%B0%E5%BA%95%E6%98%AF%E6%80%8E%E4%B9%88%E6%8E%A5%E8%BF%9B%E6%9D%A5%E7%9A%84"><span class="toc-number">6.</span> <span class="toc-text">Windows 端到底是怎么接进来的</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AC%AC%E4%B8%80%E6%AD%A5%EF%BC%8C%E5%85%88%E8%A3%85-iCloud-for-Windows"><span class="toc-number">6.1.</span> <span class="toc-text">第一步，先装 iCloud for Windows</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AC%AC%E4%BA%8C%E6%AD%A5%EF%BC%8C%E5%8E%BB%E8%B5%84%E6%BA%90%E7%AE%A1%E7%90%86%E5%99%A8%E9%87%8C%E6%89%BE%E5%88%B0%E9%82%A3%E4%B8%AA%E4%BB%93%E5%BA%93"><span class="toc-number">6.2.</span> <span class="toc-text">第二步，去资源管理器里找到那个仓库</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AC%AC%E4%B8%89%E6%AD%A5%EF%BC%8C%E6%8A%8A%E6%95%B4%E4%B8%AA%E4%BB%93%E5%BA%93%E8%AE%BE%E6%88%90%E2%80%9C%E5%A7%8B%E7%BB%88%E4%BF%9D%E7%95%99%E5%9C%A8%E6%AD%A4%E8%AE%BE%E5%A4%87%E4%B8%8A%E2%80%9D"><span class="toc-number">6.3.</span> <span class="toc-text">第三步，把整个仓库设成“始终保留在此设备上”</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AC%AC%E5%9B%9B%E6%AD%A5%EF%BC%8C%E5%9C%A8-Windows-%E7%89%88-Obsidian-%E9%87%8C%E6%89%93%E5%BC%80%E8%BF%99%E4%B8%AA%E4%BB%93%E5%BA%93"><span class="toc-number">6.4.</span> <span class="toc-text">第四步，在 Windows 版 Obsidian 里打开这个仓库</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%8A%98%E8%85%BE%E5%88%B0%E8%BF%99%E9%87%8C%EF%BC%8C%E6%88%91%E6%89%8D%E6%85%A2%E6%85%A2%E6%8A%8A%E5%87%A0%E4%BB%B6%E4%BA%8B%E6%83%B3%E6%98%8E%E7%99%BD"><span class="toc-number">7.</span> <span class="toc-text">折腾到这里，我才慢慢把几件事想明白</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-%E5%90%8C%E6%AD%A5%E6%98%AF%E5%90%8C%E6%AD%A5%EF%BC%8C%E5%86%99%E4%BD%9C%E6%98%AF%E5%86%99%E4%BD%9C"><span class="toc-number">7.1.</span> <span class="toc-text">1. 同步是同步，写作是写作</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-%E4%B8%8D%E8%A6%81%E4%B8%80%E4%B8%8A%E6%9D%A5%E5%B0%B1%E6%8A%98%E8%85%BE%E6%8F%92%E4%BB%B6"><span class="toc-number">7.2.</span> <span class="toc-text">2. 不要一上来就折腾插件</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-%E4%B8%8D%E8%A6%81%E6%B7%B7%E7%94%A8%E5%A4%9A%E5%A5%97%E5%90%8C%E6%AD%A5"><span class="toc-number">7.3.</span> <span class="toc-text">3. 不要混用多套同步</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-%E5%A4%87%E4%BB%BD%E8%BF%99%E4%BB%B6%E4%BA%8B%EF%BC%8C%E6%B0%B8%E8%BF%9C%E4%B8%8D%E4%BA%8F"><span class="toc-number">7.4.</span> <span class="toc-text">4. 备份这件事，永远不亏</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%B0%E6%9C%80%E5%90%8E%EF%BC%8C%E6%88%91%E7%9C%9F%E6%AD%A3%E5%BE%97%E5%88%B0%E7%9A%84%E5%85%B6%E5%AE%9E%E4%B8%8D%E6%98%AF%E2%80%9C%E4%BC%9A%E7%94%A8-Obsidian%E2%80%9D"><span class="toc-number">8.</span> <span class="toc-text">到最后，我真正得到的其实不是“会用 Obsidian”</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9C%80%E5%90%8E"><span class="toc-number">9.</span> <span class="toc-text">最后</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E9%93%BE%E6%8E%A5"><span class="toc-number">10.</span> <span class="toc-text">参考链接</span></a></li></ol></div></div></div></div></main><footer id="footer"><div class="footer-other" id="footer-wrap"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2023 - 2026 By 压轴戏</span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="translateLink" type="button" title="简繁转换">繁</button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><a id="to_comment" href="#post-comment" title="前往评论"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/fancyapps-ui/6.1.9/fancybox/fancybox.umd.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/instant.page/5.2.0/instantpage.min.js" type="module"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-lazyload/19.1.3/lazyload.iife.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/node-snackbar/0.1.16/snackbar.min.js"></script><div class="js-pjax"><script>(() => {
+  const isShuoshuo = GLOBAL_CONFIG_SITE.pageType === 'shuoshuo'
+  const option = null
+  const fallbackHtml = '评论服务暂时不可达，你可以先通过 <a href="/about/">关于页</a> 或 <a href="mailto:szoxidy@gmail.com">邮件</a> 联系我。'
+
+  const showFallback = el => {
+    const wrap = el && el.querySelector('#twikoo-wrap')
+    if (!wrap) return
+    if (wrap.querySelector('#comment-fallback-tip')) return
+
+    const fallback = document.createElement('div')
+    fallback.id = 'comment-fallback-tip'
+    fallback.className = 'comment-fallback-tip'
+    fallback.innerHTML = fallbackHtml
+    wrap.appendChild(fallback)
+  }
+
+  const checkEndpoint = async () => {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 3500)
+
+    try {
+      await fetch('https://twikoo-7iqe.vercel.app/', {
+        method: 'GET',
+        mode: 'no-cors',
+        cache: 'no-store',
+        signal: controller.signal
+      })
+      return true
+    } catch (error) {
+      return false
+    } finally {
+      clearTimeout(timeout)
+    }
+  }
+
+  const getCount = () => {
+    const countELement = document.getElementById('twikoo-count')
+    if(!countELement) return
+    twikoo.getCommentsCount({
+      envId: 'https://twikoo-7iqe.vercel.app/',
+      region: 'ap-shanghai',
+      urls: [window.location.pathname],
+      includeReply: false
+    }).then(res => {
+      countELement.textContent = res[0].count
+    }).catch(err => {
+      console.error(err)
+    })
+  }
+
+  const init = (el = document, path = location.pathname) => {
+    twikoo.init({
+      el: el.querySelector('#twikoo-wrap'),
+      envId: 'https://twikoo-7iqe.vercel.app/',
+      region: 'ap-shanghai',
+      onCommentLoaded: () => {
+        btf.loadLightbox(document.querySelectorAll('#twikoo .tk-content img:not(.tk-owo-emotion)'))
+      },
+      ...option,
+      path: isShuoshuo ? path : (option && option.path) || path
+    })
+
+    
+
+    isShuoshuo && (window.shuoshuoComment.destroyTwikoo = () => {
+      if (el.children.length) {
+        el.innerHTML = ''
+        el.classList.add('no-comment')
+      }
+    })
+  }
+
+  const loadTwikoo = async (el, path) => {
+    const isReachable = await checkEndpoint()
+
+    if (!isReachable) {
+      showFallback(el)
+      return
+    }
+
+    if (typeof twikoo === 'object') setTimeout(() => init(el, path), 0)
+    else btf.getScript('https://cdnjs.cloudflare.com/ajax/libs/twikoo/1.6.44/twikoo.all.min.js').then(() => init(el, path)).catch(() => showFallback(el))
+  }
+
+  if (isShuoshuo) {
+    'Twikoo' === 'Twikoo'
+      ? window.shuoshuoComment = { loadComment: loadTwikoo }
+      : window.loadOtherComment = loadTwikoo
+    return
+  }
+
+  if ('Twikoo' === 'Twikoo' || !false) {
+    if (false) btf.loadComment(document.getElementById('twikoo-wrap'), loadTwikoo)
+    else loadTwikoo()
+  } else {
+    window.loadOtherComment = loadTwikoo
+  }
+})()</script></div><script async src="/js/origin_title.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.14/vue.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/element-ui/2.15.6/index.min.js"></script><script src="/js/Button_Anti_Shake.js"></script><script defer data-pjax src="/js/read_percent.js"></script><script defer data-pjax src="/js/comment_fallback.js"></script><script id="click-show-text" texts="富强, 民主, 文明, 和谐, 自由, 平等, 公正, 法治, 爱国, 敬业, 诚信, 友善" src="/js/click_show_text.js"></script><script src="/js/right_menu.js"></script><script data-dynamic-subtitle data-target="#subtitle" split="-" src="/js/dynamic_color_text.js" texts="欲寄彩笺兼尺素，山长水阔知何处."></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div><!-- hexo injector body_end start --><script data-pjax>
+  function butterfly_footer_beautify_injector_config(){
+    var parent_div_git = document.getElementById('footer-wrap');
+    var item_html = '<div id="workboard"></div><p id="ghbdages"><a class="github-badge" target="_blank" href="https://blog.szoxidy.com" style="margin-inline:5px" title=""><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://img.shields.io/badge/copyright_%C2%A92023-SZOXIDY-orange?logo=crunchyroll&amp;labelColor=rgb(80%2C%2080%2C%2080)" alt=""/></a><a class="github-badge" target="_blank" href="https://hexo.io" style="margin-inline:5px" data-title="快速、简洁且高效的博客框架" title=""><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://img.shields.io/badge/Frame-Hexo-blue?logo=hexo&amp;color=38b1fd" alt=""/></a><a class="github-badge" target="_blank" href="https://butterfly.js.org" style="margin-inline:5px" data-title="主题版本Butterfly_v5.5.4" title=""><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://img.shields.io/badge/Theme-Butterfly-6513df?style=flat&amp;logo=bitdefender" alt=""/></a><a class="github-badge" target="_blank" href="https://dashboard.4everland.org" style="margin-inline:5px" data-title="本站采用多线部署，备用线路托管于4EVERLAND" title=""><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://img.shields.io/badge/Hosted-4EVERLAND-22DDDD?style=flat&amp;logo=IPFS" alt=""/></a><a class="github-badge" target="_blank" href="https://github.com" style="margin-inline:5px" data-title="本站项目由Github托管" title=""><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="https://img.shields.io/badge/Source-Github-d021d6?style=flat&amp;logo=GitHub" alt=""/></a></p>';
+    console.log('已挂载butterfly_footer_beautify')
+    parent_div_git.insertAdjacentHTML("beforeend",item_html)
+    }
+  var elist = 'null'.split(',');
+  var cpage = location.pathname;
+  var epage = 'all';
+  var flag = 0;
+
+  for (var i=0;i<elist.length;i++){
+    if (cpage.includes(elist[i])){
+      flag++;
+    }
+  }
+
+  if ((epage ==='all')&&(flag == 0)){
+    butterfly_footer_beautify_injector_config();
+  }
+  else if (epage === cpage){
+    butterfly_footer_beautify_injector_config();
+  }
+  </script><script async src="/js/runtime.js"></script><!-- hexo injector body_end end --></body></html>
