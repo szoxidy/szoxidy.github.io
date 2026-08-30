@@ -1,106 +1,138 @@
-const dynamicSubtitleScript = document.querySelector('script[data-dynamic-subtitle]');
+(() => {
+    const configScript = document.querySelector('script[data-dynamic-subtitle]');
 
-window.addEventListener('load', function () {
-    if (!dynamicSubtitleScript) {
+    if (!configScript) {
         return;
     }
 
-    const element = document.querySelector(dynamicSubtitleScript.getAttribute('data-target'));
+    const targetSelector = configScript.getAttribute('data-target') || '#subtitle';
+    const separator = configScript.getAttribute('split') || '-';
+    const phrases = (configScript.getAttribute('texts') || 'Hi.')
+        .split(separator)
+        .map(text => text.trim())
+        .filter(Boolean);
+    const colors = [
+        '#6e40aa', '#963db3', '#bf3caf', '#e4419d', '#fe4b83',
+        '#ff5e63', '#ff7847', '#fb9633', '#e2b72f', '#c6d63c',
+        '#7ff658', '#30ef82', '#1ddfa3', '#23abd8', '#4c6edb'
+    ];
+    const frameDelay = 75;
+    const fullTextHoldFrames = 12;
+    const replayHoldFrames = 12;
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let timer = null;
+    let runId = 0;
 
-    if (element) {
-        colorful(element);
-    }
-});
+    const stop = () => {
+        runId += 1;
+        window.clearTimeout(timer);
+        timer = null;
+    };
 
-let colorful = function (element) {
-    if (element == null) {
-        return;
-    }
+    const appendScramble = (element, count) => {
+        const fragment = document.createDocumentFragment();
 
-    function getRandomColor() {
-        return colors[Math.floor(Math.random() * colors.length)];
-    }
-
-    function getRandomChar() {
-        return String.fromCharCode(94 * Math.random() + 33);
-    }
-
-    function addEndChars(chars) {
-        let fragment = document.createDocumentFragment()
-        for (let i = 0; chars > i; i++) {
-            let endChars = document.createElement("span");
-            endChars.textContent = getRandomChar();
-            endChars.style.color = getRandomColor();
-            fragment.appendChild(endChars);
+        for (let index = 0; index < count; index += 1) {
+            const character = document.createElement('span');
+            character.textContent = String.fromCharCode(Math.floor(Math.random() * 94) + 33);
+            character.style.color = colors[Math.floor(Math.random() * colors.length)];
+            fragment.appendChild(character);
         }
-        return fragment;
-    }
 
-    function startPrint() {
-        const startChars = textArray[sets.skillI];
-        if (sets.step) {
-            sets.step--;
-        } else {
-            sets.step = speed;
-            if (sets.prefixP < showText.length) {
-                if (sets.prefixP >= 0) {
-                    sets.text += showText[sets.prefixP];
-                }
-                sets.prefixP++;
+        element.appendChild(fragment);
+    };
+
+    const start = () => {
+        stop();
+
+        const element = document.querySelector(targetSelector);
+        if (!element || !phrases.length) {
+            return;
+        }
+
+        if (reduceMotion.matches) {
+            element.textContent = phrases[0];
+            return;
+        }
+
+        const currentRunId = runId;
+        let phraseIndex = 0;
+        let characterIndex = 0;
+        let direction = 1;
+        let holdFrames = 0;
+        let waitingForReplay = false;
+
+        const render = () => {
+            if (currentRunId !== runId || !element.isConnected || document.hidden) {
+                return;
+            }
+
+            const phrase = phrases[phraseIndex];
+
+            if (holdFrames > 0) {
+                holdFrames -= 1;
             } else {
-                if ("forward" === sets.direction) {
-                    if (sets.skillP < startChars.length) {
-                        sets.text += startChars[sets.skillP];
-                        sets.skillP++;
-                    } else {
-                        if (sets.delay) {
-                            sets.delay--;
-                        } else {
-                            sets.direction = "backward";
-                            sets.delay = sentDelay;
-                        }
+                waitingForReplay = false;
+
+                if (direction > 0) {
+                    characterIndex += 1;
+
+                    if (characterIndex >= phrase.length) {
+                        characterIndex = phrase.length;
+                        direction = -1;
+                        holdFrames = fullTextHoldFrames;
                     }
                 } else {
-                    if (sets.skillP > 0) {
-                        sets.text = sets.text.slice(0, -1);
-                        sets.skillP--;
-                    } else {
-                        setTimeout(function() {
-                            sets.skillI = (sets.skillI + 1) % textArray.length;
-                            sets.direction = "forward";
-                            startPrint();  // 重新调用 startPrint 开始新的循环
-                        }, 500);
-                        return;  // 避免继续调用后面的 setTimeout(startPrint, charDelay)
+                    characterIndex -= 1;
+
+                    if (characterIndex <= 0) {
+                        characterIndex = 0;
+                        direction = 1;
+                        phraseIndex = (phraseIndex + 1) % phrases.length;
+                        holdFrames = replayHoldFrames;
+                        waitingForReplay = true;
                     }
                 }
             }
+
+            element.textContent = phrase.slice(0, characterIndex);
+
+            if (!waitingForReplay) {
+                appendScramble(element, Math.min(5, Math.max(0, phrase.length - characterIndex)));
+            }
+
+            timer = window.setTimeout(render, frameDelay);
+        };
+
+        render();
+    };
+
+    const handleVisibilityChange = () => {
+        if (document.hidden) {
+            stop();
+        } else {
+            start();
         }
-        element.textContent = sets.text;
+    };
 
-        element.appendChild(addEndChars(sets.prefixP < showText.length ? Math.min(prefixEnd, prefixEnd + sets.prefixP) : Math.min(prefixEnd, startChars.length - sets.skillP)));
-
-        setTimeout(startPrint, charDelay);
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', start, { once: true });
+    } else {
+        start();
     }
 
-    let showText = "", texts = dynamicSubtitleScript ? dynamicSubtitleScript.getAttribute("texts") || "Hi." : "Hi.";
+    if (window.btf?.addGlobalFn) {
+        btf.addGlobalFn('pjaxSend', stop, 'szoxidySubtitleStop');
+        btf.addGlobalFn('pjaxComplete', start, 'szoxidySubtitleStart');
+    } else {
+        document.addEventListener('pjax:send', stop);
+        document.addEventListener('pjax:complete', start);
+    }
 
-    let textArray = texts.split(dynamicSubtitleScript ? dynamicSubtitleScript.getAttribute("split") || "-" : "-").filter((item, index) => item.length != 0);
-    textArray = textArray.map(function (str) {
-        return str + ""
-    });
-    let sentDelay = 10,
-        speed = 1,
-        prefixEnd = 5,
-        charDelay = 75,
-        colors = ["rgb(110,64,170)", "rgb(150,61,179)", "rgb(191,60,175)", "rgb(228,65,157)", "rgb(254,75,131)", "rgb(255,94,99)", "rgb(255,120,71)", "rgb(251,150,51)", "rgb(226,183,47)", "rgb(198,214,60)", "rgb(175,240,91)", "rgb(127,246,88)", "rgb(82,246,103)", "rgb(48,239,130)", "rgb(29,223,163)", "rgb(26,199,194)", "rgb(35,171,216)", "rgb(54,140,225)", "rgb(76,110,219)", "rgb(96,84,200)"],
-        sets = {
-            text: "",
-            prefixP: -prefixEnd,
-            skillI: 0,
-            skillP: 0,
-            direction: "forward",
-            delay: sentDelay,
-            step: speed
-        };
-    startPrint();
-};
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    if (typeof reduceMotion.addEventListener === 'function') {
+        reduceMotion.addEventListener('change', start);
+    } else {
+        reduceMotion.addListener(start);
+    }
+})();

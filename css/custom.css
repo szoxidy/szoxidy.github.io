@@ -15,59 +15,155 @@
     background: transparent !important;
 }
 
-#footer-wrap #workboard {
-    margin: 0.75rem auto 0;
-    max-width: 960px;
+#footer .footer-other {
+    padding: 1.5rem 1rem 0.35rem;
+}
+
+#footer #workboard {
+    width: min(960px, calc(100% - 2rem));
+    margin: 0.45rem auto 0;
     text-align: center;
-    line-height: 1.9;
+    line-height: 1.75;
     word-break: break-word;
 }
 
-#footer-wrap #ghbdages {
-    margin: 0.75rem auto 0;
-    max-width: 960px;
-    text-align: center;
-    line-height: 1.8;
+#footer #workboard .boardsign {
+    display: block;
+    max-width: 100%;
+    margin: 0 auto 0.35rem;
 }
 
-#footer-wrap #ghbdages .github-badge {
+#footer #workboard .runtime-summary {
+    font-size: 13px;
+    font-weight: 700;
+}
+
+#footer #ghbdages {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: min(960px, calc(100% - 2rem));
+    margin: 0.65rem auto 1.2rem;
+    padding: 0;
+    gap: 0.35rem 0.45rem;
+}
+
+#footer #ghbdages .github-badge {
     display: inline-flex;
-    margin: 0.18rem 0.24rem;
+    margin: 0 !important;
     vertical-align: middle;
 }
 
-/* Element UI 通知弹窗 */
-.el-notification {
+#footer #ghbdages .github-badge img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
+/* Element 风格的原生通知 */
+.site-notifications {
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    z-index: 20000;
+    display: grid;
+    gap: 0.75rem;
+    width: min(360px, calc(100vw - 2rem));
+    pointer-events: none;
+}
+
+.site-notification {
+    display: grid;
+    grid-template-columns: 1.75rem minmax(0, 1fr) 1.75rem;
+    gap: 0.75rem;
+    align-items: start;
+    padding: 0.9rem 0.75rem 0.9rem 1rem;
     border: 1px solid rgba(73, 177, 245, 0.18);
-    border-radius: 12px;
+    border-radius: 8px;
     background: rgba(255, 255, 255, 0.96);
     box-shadow: 0 12px 32px rgba(15, 23, 42, 0.16);
+    opacity: 0;
+    pointer-events: auto;
+    transform: translateX(-1.5rem);
+    transition: opacity 0.2s ease, transform 0.2s ease;
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
 }
 
-.el-notification__title {
+.site-notification.is-visible {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.site-notification__icon {
+    margin-top: 0.2rem;
+    color: #409eff;
+    font-size: 1.35rem;
+}
+
+.site-notification--success .site-notification__icon {
+    color: #67c23a;
+}
+
+.site-notification--warning .site-notification__icon {
+    color: #e6a23c;
+}
+
+.site-notification--error .site-notification__icon {
+    color: #f56c6c;
+}
+
+.site-notification__content {
+    min-width: 0;
+}
+
+.site-notification__title {
+    display: block;
     color: #1f2d3d;
-    font-weight: 700;
+    font-size: 0.95rem;
+    line-height: 1.5;
 }
 
-.el-notification__content {
+.site-notification__message {
+    margin: 0.2rem 0 0;
     color: #4b5563;
-    line-height: 1.7;
+    font-size: 0.875rem;
+    line-height: 1.65;
+    overflow-wrap: anywhere;
 }
 
-[data-theme="dark"] .el-notification {
+.site-notification__close {
+    display: grid;
+    width: 1.75rem;
+    height: 1.75rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #909399;
+    cursor: pointer;
+    place-items: center;
+}
+
+.site-notification__close:hover {
+    color: #606266;
+}
+
+[data-theme="dark"] .site-notification {
     border-color: rgba(255, 255, 255, 0.12);
     background: rgba(31, 31, 31, 0.96);
     box-shadow: 0 12px 32px rgba(0, 0, 0, 0.36);
 }
 
-[data-theme="dark"] .el-notification__title {
+[data-theme="dark"] .site-notification__title {
     color: #f5f7fa;
 }
 
-[data-theme="dark"] .el-notification__content {
+[data-theme="dark"] .site-notification__message {
     color: #d1d5db;
+}
+
+[data-theme="dark"] .site-notification__close:hover {
+    color: #f5f7fa;
 }
 
 #page-header::before {
@@ -124,29 +220,19 @@
 /* 字体设置 */
 /* 文章代码格式 */
 @font-face {
-    /* 为载入的字体取名字(随意) */
     font-family: 'JetBrains Mono Bold';
-    /* 字体文件地址(相对或者绝对路径都可以) */
     src: url('/font/JetBrainsMono-Bold.ttf') format('truetype');
-    /* 定义加粗样式(加粗多少) */
-    font-weight: normal;
-    /* 定义字体样式(斜体/非斜体) */
+    font-weight: 700;
     font-style: normal;
-    /* 定义显示样式 */
     font-display: swap;
 }
 
 /* 博客字体样式 */
 @font-face {
-    /* 为载入的字体取名字(随意) */
     font-family: '霞鹜文楷 GB';
-    /* 字体文件地址(相对或者绝对路径都可以) */
     src: url('/font/LXGWWenKaiGB-Bold.ttf') format('truetype');
-    /* 定义加粗样式(加粗多少) */
-    font-weight: normal;
-    /* 定义字体样式(斜体/非斜体) */
+    font-weight: 700;
     font-style: normal;
-    /* 定义显示样式 */
     font-display: swap;
 }
 
@@ -207,15 +293,6 @@ div#archive {
     background: var(--trans-dark);
 }
 
-
-/* 夜间模式页脚页头遮罩透明 */
-[data-theme="dark"] #footer::before {
-    background: transparent !important;
-}
-
-[data-theme="dark"] #page-header::before {
-    background: transparent !important;
-}
 
 /* 阅读模式 */
 .read-mode #aside-content .card-widget {
@@ -281,15 +358,29 @@ div#archive {
 }
 
 #rightMenu .rightMenu-group .rightMenu-item {
+    display: block;
     height: 30px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font: inherit;
     line-height: 30px;
     border-radius: 8px;
-    transition: 0.3s;
     color: var(--font-color);
+    cursor: pointer;
+    text-align: left;
+    transition: background-color 0.2s ease;
+}
+
+#rightMenu .rightMenu-group.rightMenu-small .rightMenu-item {
+    flex: 1;
+    text-align: center;
 }
 
 #rightMenu .rightMenu-group.rightMenu-line .rightMenu-item {
     display: flex;
+    width: 100%;
     height: 40px;
     line-height: 40px;
     padding: 0 4px;
@@ -322,6 +413,14 @@ div#archive {
     display: none;
 }
 
+.rmMask {
+    position: fixed;
+    inset: 0;
+    z-index: 998;
+    display: none;
+    background: transparent;
+}
+
 .comment-fallback-tip {
     margin-top: 1rem;
     padding: 1rem 1.2rem;
@@ -335,6 +434,12 @@ div#archive {
 .comment-fallback-tip a {
     color: var(--theme-color);
     text-decoration: underline;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .site-notification {
+        transition: none;
+    }
 }
 
 

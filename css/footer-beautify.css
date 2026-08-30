@@ -1,0 +1,22 @@
+@media (hover: hover) {
+    a.github-badge:hover::before {
+        position: fixed;
+        top: 10%;
+        right: 0;
+        left: 0;
+        z-index: 100;
+        width: fit-content;
+        margin: auto;
+        padding: 0.65rem 0.85rem;
+        border-radius: 8px;
+        background: var(--text-bg-hover);
+        color: #fff;
+        content: attr(data-title);
+        font-size: 1rem;
+        text-align: center;
+    }
+}
+
+[data-theme="dark"] a.github-badge:hover::before {
+    background: rgba(18, 18, 18, 0.88);
+}

@@ -1,14 +1,31 @@
 (() => {
-    const isMobile = /(phone|pad|pod|iPhone|iPod|ios|iPad|Android|Mobile|BlackBerry|IEMobile|MQQBrowser|JUC|Fennec|wOSBrowser|BrowserNG|WebOS|Symbian|Windows Phone)/i.test(navigator.userAgent);
-    const postPathPattern = /^\/\d{4}\/\d{2}\/\d{2}\/.+\/?$/;
-    const state = {
-        bound: false,
-        mouseMode: localStorage.getItem('mouse') || 'on'
+    const supportsCustomContextMenu = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    const postPathPattern = /^\/posts\/[^/]+(?:\/(?:index\.html)?)?$/;
+    const archivePathPattern = /^\/archives(?:\/page\/\d+)?\/?$/;
+    let postUrlCache = null;
+
+    const readStorage = (key, fallback) => {
+        try {
+            return localStorage.getItem(key) || fallback;
+        } catch (error) {
+            return fallback;
+        }
     };
 
-    if (!localStorage.getItem('mouse')) {
-        localStorage.setItem('mouse', state.mouseMode);
-    }
+    const writeStorage = (key, value) => {
+        try {
+            localStorage.setItem(key, value);
+        } catch (error) {
+            // Storage can be unavailable in strict privacy modes.
+        }
+    };
+
+    const state = {
+        bound: false,
+        mouseMode: readStorage('mouse', 'on')
+    };
+
+    writeStorage('mouse', state.mouseMode);
 
     const rmf = {};
     window.rmf = rmf;
@@ -21,6 +38,16 @@
     };
 
     const showMessage = (text, position = 'top-left') => {
+        if (window.siteNotify) {
+            window.siteNotify({
+                title: '提示',
+                message: text,
+                type: 'info',
+                key: `right-menu-${position}`
+            });
+            return;
+        }
+
         if (window.Snackbar) {
             Snackbar.show({
                 text,
@@ -35,13 +62,18 @@
 
     const copyText = async (text) => {
         if (navigator.clipboard && window.isSecureContext) {
-            await navigator.clipboard.writeText(text);
-            if (window.copyNotify) {
-                window.copyNotify();
-            } else {
-                showMessage('复制成功');
+            try {
+                await navigator.clipboard.writeText(text);
+
+                if (window.copyNotify) {
+                    window.copyNotify();
+                } else {
+                    showMessage('复制成功');
+                }
+                return true;
+            } catch (error) {
+                // Fall through to the textarea-based compatibility path.
             }
-            return;
         }
 
         const txa = document.createElement('textarea');
@@ -51,8 +83,20 @@
         txa.style.opacity = '0';
         document.body.appendChild(txa);
         txa.select();
-        document.execCommand('copy');
+        const copied = document.execCommand('copy');
         txa.remove();
+
+        if (copied) {
+            if (window.copyNotify) {
+                window.copyNotify();
+            } else {
+                showMessage('复制成功');
+            }
+            return true;
+        }
+
+        showMessage('复制失败，请手动复制');
+        return false;
     };
 
     const normalizePostUrl = (url) => {
@@ -87,29 +131,72 @@
         return Array.from(urls);
     };
 
-    const getAllPostUrls = async () => {
+    const collectArchiveUrls = (root) => {
+        return queryAll('a[href]', root).reduce((urls, link) => {
+            try {
+                const url = new URL(link.getAttribute('href'), location.origin);
+
+                if (url.origin === location.origin && archivePathPattern.test(url.pathname)) {
+                    urls.add(url.pathname);
+                }
+            } catch (error) {
+                // Ignore malformed hrefs from third-party widgets.
+            }
+
+            return urls;
+        }, new Set());
+    };
+
+    const loadAllPostUrls = async () => {
         const urls = new Set(collectPostUrls(document));
+        const archiveQueue = ['/archives/'];
+        const visitedArchives = new Set();
 
-        try {
-            const response = await fetch('/archives/', { credentials: 'same-origin' });
+        while (archiveQueue.length && visitedArchives.size < 100) {
+            const archivePath = archiveQueue.shift();
 
-            if (response.ok) {
+            if (visitedArchives.has(archivePath)) {
+                continue;
+            }
+
+            visitedArchives.add(archivePath);
+
+            try {
+                const response = await fetch(archivePath, { credentials: 'same-origin' });
+
+                if (!response.ok) {
+                    continue;
+                }
+
                 const html = await response.text();
                 const archiveDoc = new DOMParser().parseFromString(html, 'text/html');
                 collectPostUrls(archiveDoc).forEach(url => urls.add(url));
+                collectArchiveUrls(archiveDoc).forEach(path => {
+                    if (!visitedArchives.has(path)) {
+                        archiveQueue.push(path);
+                    }
+                });
+            } catch (error) {
+                console.debug('Archive page could not be read:', archivePath, error);
             }
-        } catch (error) {
-            console.error(error);
         }
 
         return Array.from(urls);
+    };
+
+    const getAllPostUrls = () => {
+        if (!postUrlCache) {
+            postUrlCache = loadAllPostUrls();
+        }
+
+        return postUrlCache;
     };
 
     const navigateTo = (url) => {
         const parsed = new URL(url, location.origin);
 
         if (parsed.origin === location.origin && window.pjax) {
-            window.pjax.loadUrl(parsed.pathname);
+            window.pjax.loadUrl(`${parsed.pathname}${parsed.search}${parsed.hash}`);
             return;
         }
 
@@ -147,68 +234,51 @@
 
         mask = document.createElement('div');
         mask.className = 'rmMask';
-        Object.assign(mask.style, {
-            display: 'none',
-            width: '100vw',
-            height: '100vh',
-            background: '#fff',
-            opacity: '0',
-            position: 'fixed',
-            top: '0',
-            left: '0',
-            zIndex: 998
-        });
         document.body.appendChild(mask);
         mask.addEventListener('click', hideMask);
         return mask;
     };
 
     const createRightMenuMarkup = () => {
-        const isContentPage = document.getElementById('post') || document.getElementById('page');
-        const readModeItem = isContentPage ? `
-    <a class="rightMenu-item" href="javascript:rmf.switchReadMode()">
-        <i class="fa-solid fa-book-open"></i>
-        <span>阅读模式</span>
-    </a>` : '';
-
         return `
-<div id="rightMenu" class="js-pjax">
+<div id="rightMenu">
     <div class="rightMenu-group rightMenu-small">
-        <a class="rightMenu-item" href="javascript:window.history.back();"><i class="fa-solid fa-arrow-left"></i></a>
-        <a class="rightMenu-item" href="javascript:window.history.forward();"><i class="fa-solid fa-arrow-right"></i></a>
-        <a class="rightMenu-item" href="javascript:window.location.reload();"><i class="fa-solid fa-rotate-right"></i></a>
-        <a class="rightMenu-item" href="javascript:rmf.scrollToTop();"><span class="scroll-percent"></span><i class="fa-solid fa-arrow-up"></i></a>
+        <button class="rightMenu-item" type="button" data-rmf-action="historyBack" title="后退" aria-label="后退"><i class="fa-solid fa-arrow-left"></i></button>
+        <button class="rightMenu-item" type="button" data-rmf-action="historyForward" title="前进" aria-label="前进"><i class="fa-solid fa-arrow-right"></i></button>
+        <button class="rightMenu-item" type="button" data-rmf-action="reloadPage" title="刷新" aria-label="刷新"><i class="fa-solid fa-rotate-right"></i></button>
+        <button class="rightMenu-item" type="button" data-rmf-action="scrollToTop" title="回到顶部" aria-label="回到顶部"><i class="fa-solid fa-arrow-up"></i></button>
     </div>
     <div class="rightMenu-group rightMenu-line hide" id="menu-text">
-        <a class="rightMenu-item" href="javascript:rmf.copySelect();"><i class="fa-solid fa-copy"></i><span>复制</span></a>
-        <a class="rightMenu-item" href="javascript:rmf.searchSelect();"><i class="fa-solid fa-magnifying-glass"></i><span>百度搜索</span></a>
+        <button class="rightMenu-item" type="button" data-rmf-action="copySelect"><i class="fa-solid fa-copy"></i><span>复制</span></button>
+        <button class="rightMenu-item" type="button" data-rmf-action="searchSelect"><i class="fa-solid fa-magnifying-glass"></i><span>百度搜索</span></button>
     </div>
     <div class="rightMenu-group rightMenu-line hide" id="menu-too">
-        <a class="rightMenu-item" href="javascript:rmf.openSelect();"><i class="fa-solid fa-link"></i><span>转到链接</span></a>
+        <button class="rightMenu-item" type="button" data-rmf-action="openSelect"><i class="fa-solid fa-link"></i><span>转到链接</span></button>
     </div>
     <div class="rightMenu-group rightMenu-line hide" id="menu-paste">
-        <a class="rightMenu-item" href="javascript:rmf.paste()"><i class="fa-solid fa-paste"></i><span>粘贴</span></a>
+        <button class="rightMenu-item" type="button" data-rmf-action="paste"><i class="fa-solid fa-paste"></i><span>粘贴</span></button>
     </div>
     <div class="rightMenu-group rightMenu-line hide" id="menu-post">
-        <a class="rightMenu-item" href="#post-comment"><i class="fa-solid fa-comments"></i><span>空降评论</span></a>
-        <a class="rightMenu-item" href="javascript:rmf.copyWordsLink()"><i class="fa-solid fa-link"></i><span>复制本文地址</span></a>
+        <a class="rightMenu-item" data-menu-comment href="#post-comment"><i class="fa-solid fa-comments"></i><span>空降评论</span></a>
+        <button class="rightMenu-item" type="button" data-rmf-action="copyWordsLink"><i class="fa-solid fa-link"></i><span>复制本文地址</span></button>
+        <button class="rightMenu-item" type="button" data-rmf-action="switchReadMode"><i class="fa-solid fa-book-open"></i><span>阅读模式</span></button>
     </div>
     <div class="rightMenu-group rightMenu-line hide" id="menu-to">
-        <a class="rightMenu-item" href="javascript:rmf.openWithNewTab()"><i class="fa-solid fa-up-right-from-square"></i><span>新窗口打开</span></a>
-        <a class="rightMenu-item" href="javascript:rmf.open()"><i class="fa-solid fa-link"></i><span>转到链接</span></a>
-        <a class="rightMenu-item" href="javascript:rmf.copyLink()"><i class="fa-solid fa-copy"></i><span>复制链接</span></a>
+        <button class="rightMenu-item" type="button" data-rmf-action="openWithNewTab"><i class="fa-solid fa-up-right-from-square"></i><span>新窗口打开</span></button>
+        <button class="rightMenu-item" type="button" data-rmf-action="open"><i class="fa-solid fa-link"></i><span>转到链接</span></button>
+        <button class="rightMenu-item" type="button" data-rmf-action="copyLink"><i class="fa-solid fa-copy"></i><span>复制链接</span></button>
     </div>
     <div class="rightMenu-group rightMenu-line hide" id="menu-img">
-        <a class="rightMenu-item" href="javascript:rmf.saveAs()"><i class="fa-solid fa-download"></i><span>保存图片</span></a>
-        <a class="rightMenu-item" href="javascript:rmf.openWithNewTab()"><i class="fa-solid fa-up-right-from-square"></i><span>在新窗口打开</span></a>
-        <a class="rightMenu-item" href="javascript:rmf.copyLink()"><i class="fa-solid fa-copy"></i><span>复制图片链接</span></a>
+        <button class="rightMenu-item" type="button" data-rmf-action="saveAs"><i class="fa-solid fa-download"></i><span>保存图片</span></button>
+        <button class="rightMenu-item" type="button" data-rmf-action="openWithNewTab"><i class="fa-solid fa-up-right-from-square"></i><span>在新窗口打开</span></button>
+        <button class="rightMenu-item" type="button" data-rmf-action="copyLink"><i class="fa-solid fa-copy"></i><span>复制图片链接</span></button>
     </div>
     <div class="rightMenu-group rightMenu-line">
-        <a class="rightMenu-item" href="javascript:rmf.randomPost()"><i class="fa-solid fa-paper-plane"></i><span>随便逛逛</span></a>
-        <a class="rightMenu-item" href="javascript:rmf.activateThemeMode()"><i class="fa-solid fa-circle-half-stroke"></i><span>昼夜切换</span></a>${readModeItem}
+        <button class="rightMenu-item" type="button" data-rmf-action="randomPost"><i class="fa-solid fa-paper-plane"></i><span>随便逛逛</span></button>
+        <button class="rightMenu-item" type="button" data-rmf-action="activateThemeMode"><i class="fa-solid fa-circle-half-stroke"></i><span>昼夜切换</span></button>
         <a class="rightMenu-item" href="/about/"><i class="fa-solid fa-circle-info"></i><span>关于博客</span></a>
-        <a class="rightMenu-item" href="javascript:rmf.fullScreen();"><i class="fa-solid fa-expand"></i><span>切换全屏</span></a>
-        <a class="rightMenu-item" href="javascript:window.print();"><i class="fa-solid fa-print"></i><span>打印页面</span></a>
+        <button class="rightMenu-item" type="button" data-rmf-action="fullScreen"><i class="fa-solid fa-expand"></i><span>切换全屏</span></button>
+        <button class="rightMenu-item" type="button" data-rmf-action="printPage"><i class="fa-solid fa-print"></i><span>打印页面</span></button>
     </div>
 </div>`;
     };
@@ -222,6 +292,10 @@
 
         if (rightMenu) {
             rightMenu.style.zIndex = 19198;
+
+            queryAll('a[href]', rightMenu).forEach((link) => {
+                link.setAttribute('data-no-instant', '');
+            });
         }
     };
 
@@ -230,11 +304,30 @@
         const showPanel = document.getElementById('rightside-config-show');
 
         if (hidePanel && !document.getElementById('mouse-mode-toggle')) {
-            hidePanel.insertAdjacentHTML('beforeend', '<button id="mouse-mode-toggle" class="share" type="button" title="右键模式" onclick="changeMouseMode()"><i class="fa-solid fa-arrow-pointer"></i></button>');
+            const mouseModeButton = document.createElement('button');
+            mouseModeButton.id = 'mouse-mode-toggle';
+            mouseModeButton.className = 'share';
+            mouseModeButton.type = 'button';
+            mouseModeButton.title = '右键模式';
+            mouseModeButton.innerHTML = '<i class="fa-solid fa-arrow-pointer"></i>';
+            mouseModeButton.addEventListener('click', changeMouseMode);
+            hidePanel.appendChild(mouseModeButton);
         }
 
         if (showPanel && !document.getElementById('go-down')) {
-            showPanel.insertAdjacentHTML('beforeend', '<button id="go-down" type="button" title="直达底部" onclick="btf.scrollToDest(document.body.scrollHeight, 500)"><i class="fa-solid fa-arrow-down"></i></button>');
+            const goDownButton = document.createElement('button');
+            goDownButton.id = 'go-down';
+            goDownButton.type = 'button';
+            goDownButton.title = '直达底部';
+            goDownButton.innerHTML = '<i class="fa-solid fa-arrow-down"></i>';
+            goDownButton.addEventListener('click', () => {
+                if (window.btf) {
+                    btf.scrollToDest(document.body.scrollHeight, 500);
+                } else {
+                    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                }
+            });
+            showPanel.appendChild(goDownButton);
         }
     };
 
@@ -250,8 +343,14 @@
         rightMenu.style.display = visible ? 'block' : 'none';
     };
 
+    rmf.historyBack = () => window.history.back();
+    rmf.historyForward = () => window.history.forward();
+    rmf.reloadPage = () => window.location.reload();
+    rmf.printPage = () => window.print();
+
     rmf.copyWordsLink = () => {
-        copyText(window.location.href);
+        const canonical = document.querySelector('link[rel="canonical"]');
+        copyText(canonical ? canonical.href : normalizePostUrl(window.location.href));
     };
 
     rmf.switchReadMode = () => {
@@ -267,7 +366,7 @@
         exitButton = document.createElement('button');
         exitButton.type = 'button';
         exitButton.className = 'exit-readmode';
-        exitButton.innerHTML = '<i class="fas fa-sign-out-alt"></i>';
+        exitButton.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i>';
 
         const exitReadMode = () => {
             body.classList.remove('read-mode');
@@ -301,7 +400,7 @@
             return;
         }
 
-        document.execCommand('copy', false, null);
+        showMessage('请先选中要复制的文字');
     };
 
     rmf.searchSelect = () => {
@@ -354,13 +453,16 @@
         }
     };
 
-    rmf.fullScreen = () => {
-        if (document.fullscreenElement) {
-            document.exitFullscreen();
-            return;
+    rmf.fullScreen = async () => {
+        try {
+            if (document.fullscreenElement) {
+                await document.exitFullscreen();
+            } else {
+                await document.documentElement.requestFullscreen();
+            }
+        } catch (error) {
+            showMessage('当前浏览器无法切换全屏模式');
         }
-
-        document.documentElement.requestFullscreen();
     };
 
     const handleLinkTarget = (link) => {
@@ -368,7 +470,7 @@
             const parsed = new URL(link.href, location.origin);
 
             if (parsed.origin === location.origin && window.pjax) {
-                window.pjax.loadUrl(parsed.pathname);
+                window.pjax.loadUrl(`${parsed.pathname}${parsed.search}${parsed.hash}`);
                 return;
             }
 
@@ -393,15 +495,38 @@
             copyText(image.currentSrc || image.src);
         };
 
-        rmf.saveAs = () => {
+        rmf.saveAs = async () => {
             const src = image.currentSrc || image.src;
-            const link = document.createElement('a');
-            const filename = new URL(src, location.origin).pathname.split('/').filter(Boolean).pop() || 'image';
 
-            link.href = src;
-            link.download = filename;
-            link.rel = 'noopener';
-            link.click();
+            try {
+                const response = await fetch(src, { mode: 'cors' });
+
+                if (!response.ok) {
+                    throw new Error(`Image request failed with ${response.status}`);
+                }
+
+                const blob = await response.blob();
+                const objectUrl = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                const pathName = new URL(src, location.origin).pathname;
+                let filename = pathName.split('/').filter(Boolean).pop() || 'image';
+
+                if (!filename.includes('.') && blob.type.startsWith('image/')) {
+                    const extension = blob.type.split('/')[1].replace('jpeg', 'jpg');
+                    filename = `${filename}.${extension}`;
+                }
+
+                link.href = objectUrl;
+                link.download = filename;
+                link.rel = 'noopener';
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+            } catch (error) {
+                window.open(src, '_blank', 'noopener');
+                showMessage('图片已在新窗口打开，可使用浏览器保存');
+            }
         };
     };
 
@@ -423,6 +548,7 @@
                 }
 
                 input.focus();
+                input.dispatchEvent(new Event('input', { bubbles: true }));
             } catch (error) {
                 showMessage('请允许读取剪贴板！', 'top-center');
             }
@@ -456,6 +582,11 @@
         setGroupVisible('menu-too', Boolean(selectedTextIsUrl && !link));
         setGroupVisible('menu-post', Boolean(document.getElementById('post') || document.getElementById('page')));
 
+        const commentItem = query('[data-menu-comment]', rightMenu);
+        if (commentItem) {
+            commentItem.style.display = document.getElementById('post-comment') ? '' : 'none';
+        }
+
         if (link) {
             setGroupVisible('menu-to', true);
             handleLinkTarget(link);
@@ -485,6 +616,16 @@
         state.bound = true;
 
         document.addEventListener('click', (event) => {
+            const actionButton = event.target.closest('#rightMenu [data-rmf-action]');
+
+            if (actionButton) {
+                const action = rmf[actionButton.dataset.rmfAction];
+
+                if (typeof action === 'function') {
+                    action();
+                }
+            }
+
             if (event.target.closest('#rightMenu .rightMenu-item')) {
                 hideMask();
             }
@@ -492,12 +633,17 @@
             rmf.showRightMenu(false);
         });
 
-        window.addEventListener('resize', () => {
+        const handleResize = () => {
             rmf.showRightMenu(false);
             hideMask();
-        }, { passive: true });
+        };
+        const resizeHandler = window.btf?.rafThrottle
+            ? btf.rafThrottle(handleResize)
+            : handleResize;
 
-        if (!isMobile) {
+        window.addEventListener('resize', resizeHandler, { passive: true });
+
+        if (supportsCustomContextMenu) {
             document.addEventListener('contextmenu', handleContextMenu);
         }
     };
@@ -510,16 +656,11 @@
 
     const changeMouseMode = () => {
         state.mouseMode = state.mouseMode === 'on' ? 'off' : 'on';
-        localStorage.setItem('mouse', state.mouseMode);
+        writeStorage('mouse', state.mouseMode);
 
         const message = state.mouseMode === 'on'
             ? '当前鼠标右键已更换为网站指定样式！'
             : '当前鼠标右键已恢复为系统默认！';
-
-        if (window.debounce) {
-            debounce(() => showMessage(message), 300);
-            return;
-        }
 
         showMessage(message);
     };
@@ -532,5 +673,9 @@
         initRightMenuUi();
     }
 
-    document.addEventListener('pjax:complete', initRightMenuUi);
+    if (window.btf?.addGlobalFn) {
+        btf.addGlobalFn('pjaxComplete', initRightMenuUi, 'szoxidyRightMenu');
+    } else {
+        document.addEventListener('pjax:complete', initRightMenuUi);
+    }
 })();
