@@ -10,6 +10,10 @@
     background-attachment: scroll;
 }
 
+#web_bg.bg-animation {
+    animation: none !important;
+}
+
 /* 白天模式遮罩透明 */
 #footer::before {
     background: transparent !important;
@@ -217,20 +221,23 @@
     text-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
 }
 
-/* 字体设置 */
-/* 文章代码格式 */
+#site-title,
+#site-subtitle {
+    -webkit-user-select: none;
+    user-select: none;
+}
+
 @font-face {
     font-family: 'JetBrains Mono Bold';
-    src: url('/font/JetBrainsMono-Bold.ttf') format('truetype');
+    src: url('../font/JetBrainsMono-Bold.woff2') format('woff2');
     font-weight: 700;
     font-style: normal;
     font-display: swap;
 }
 
-/* 博客字体样式 */
 @font-face {
     font-family: '霞鹜文楷 GB';
-    src: url('/font/LXGWWenKaiGB-Bold.ttf') format('truetype');
+    src: url('../font/LXGWWenKaiGB-Bold.woff2') format('woff2');
     font-weight: 700;
     font-style: normal;
     font-display: swap;
@@ -242,6 +249,51 @@
     --trans-dark: rgba(25, 25, 25, 0.94);
     --border-style: 1px solid rgb(169, 169, 169);
     --backdrop-filter: none;
+    --scrollbar-color: #49b1f5;
+    --scrollbar-color-alt: #00c4b6;
+    --scrollbar-track: rgba(73, 177, 245, 0.08);
+}
+
+[data-theme="dark"] {
+    --scrollbar-color: #5ebcf5;
+    --scrollbar-color-alt: #28d7c3;
+    --scrollbar-track: rgba(255, 255, 255, 0.06);
+}
+
+html.with-fancybox {
+    --scrollbar-color: transparent;
+    --scrollbar-color-alt: transparent;
+    --scrollbar-track: transparent;
+}
+
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-color) var(--scrollbar-track);
+}
+
+*::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+}
+
+*::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+}
+
+*::-webkit-scrollbar-thumb {
+    min-height: 48px;
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background: linear-gradient(180deg, var(--scrollbar-color), var(--scrollbar-color-alt));
+    background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    filter: brightness(1.08) saturate(1.18);
+}
+
+*::-webkit-scrollbar-corner {
+    background: transparent;
 }
 
 /* 首页文章卡片 */
@@ -424,7 +476,7 @@ div#archive {
 .comment-fallback-tip {
     margin-top: 1rem;
     padding: 1rem 1.2rem;
-    border: 1px solid var(--style-border);
+    border: var(--border-style);
     border-radius: 12px;
     background: var(--card-bg);
     color: var(--font-color);
@@ -432,7 +484,7 @@ div#archive {
 }
 
 .comment-fallback-tip a {
-    color: var(--theme-color);
+    color: var(--scrollbar-color);
     text-decoration: underline;
 }
 
@@ -441,5 +493,3 @@ div#archive {
         transition: none;
     }
 }
-
-

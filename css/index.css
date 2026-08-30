@@ -2054,7 +2054,7 @@ figure.highlight pre .javascript .function {
 .container pre,
 .container code {
   font-size: 14px;
-  font-family: "JetBrains Mono Bold", Consolas, var(--global-font), "Microsoft YaHei", Menlo, "PingFang SC", "Microsoft JhengHei", monospace !important;
+  font-family: "JetBrains Mono Bold", Consolas, "Microsoft YaHei", Menlo, "PingFang SC", "Microsoft JhengHei", monospace !important;
   border-radius: 6px;
 }
 .container code {
