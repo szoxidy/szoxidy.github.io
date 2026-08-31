@@ -227,17 +227,25 @@
     user-select: none;
 }
 
-@font-face {
-    font-family: 'JetBrains Mono Bold';
-    src: url('../font/JetBrainsMono-Bold.woff2') format('woff2');
-    font-weight: 700;
-    font-style: normal;
-    font-display: swap;
+.lucide-house {
+    display: inline-block;
+    width: 1.15em;
+    height: 1.15em;
+    vertical-align: -0.18em;
+    background-color: currentColor;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8'/%3E%3Cpath d='M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8'/%3E%3Cpath d='M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+@media screen and (max-width: 768px) {
+    #site_social_icons {
+        display: none !important;
+    }
 }
 
 @font-face {
-    font-family: '霞鹜文楷 GB';
-    src: url('../font/LXGWWenKaiGB-Bold.woff2') format('woff2');
+    font-family: 'JetBrains Mono Bold';
+    src: url('../font/JetBrainsMono-Bold.woff2') format('woff2');
     font-weight: 700;
     font-style: normal;
     font-display: swap;
@@ -249,15 +257,18 @@
     --trans-dark: rgba(25, 25, 25, 0.94);
     --border-style: 1px solid rgb(169, 169, 169);
     --backdrop-filter: none;
-    --scrollbar-color: #49b1f5;
-    --scrollbar-color-alt: #00c4b6;
-    --scrollbar-track: rgba(73, 177, 245, 0.08);
+    --house-icon-color: #dcb141;
+    --scrollbar-color: #dcb141;
+    --scrollbar-color-alt: #496548;
+    --scrollbar-track: rgba(220, 177, 65, 0.1);
 }
 
 [data-theme="dark"] {
-    --scrollbar-color: #5ebcf5;
-    --scrollbar-color-alt: #28d7c3;
-    --scrollbar-track: rgba(255, 255, 255, 0.06);
+    --trans-dark: rgba(53, 48, 39, 0.86);
+    --house-icon-color: #efc048;
+    --scrollbar-color: #806723;
+    --scrollbar-color-alt: #51452a;
+    --scrollbar-track: rgba(81, 69, 42, 0.18);
 }
 
 html.with-fancybox {
@@ -296,8 +307,53 @@ html.with-fancybox {
     background: transparent;
 }
 
+#rightside > div > button,
+#rightside > div > a {
+    background-color: #dac9a5 !important;
+}
+
+#rightside > div > button:hover,
+#rightside > div > a:hover {
+    background-color: #caa748 !important;
+}
+
+#aside-content #card-toc .toc-content .toc-link.active {
+    background: #ffdf97 !important;
+    color: #251a00 !important;
+}
+
+[data-theme="dark"] #web_bg::before {
+    background-color: rgba(30, 27, 22, 0.3) !important;
+}
+
+[data-theme="dark"] #rightside > div > button,
+[data-theme="dark"] #rightside > div > a {
+    background-color: #51452a !important;
+}
+
+[data-theme="dark"] #rightside > div > button:hover,
+[data-theme="dark"] #rightside > div > a:hover {
+    background-color: #5a4300 !important;
+}
+
+[data-theme="dark"] #aside-content #card-toc .toc-content .toc-link.active {
+    background: #5a4300 !important;
+    color: #ffdf97 !important;
+}
+
+[data-theme="dark"] #card-info-btn {
+    background-color: #5a4300 !important;
+    color: #ffdf97 !important;
+}
+
+[data-theme="dark"] #page-header:not(.nav-fixed) #nav a,
+[data-theme="dark"] #page-header:not(.nav-fixed) #nav span.site-page,
+[data-theme="dark"] #page-header:not(.nav-fixed) #nav .site-name {
+    color: rgba(255, 255, 255, 0.76) !important;
+}
+
 /* 首页文章卡片 */
-#recent-posts > .recent-post-item {
+#recent-posts .recent-post-item {
     background: var(--trans-light);
     backdrop-filter: var(--backdrop-filter);
     -webkit-backdrop-filter: var(--backdrop-filter);
@@ -333,11 +389,11 @@ div#archive {
 }
 
 [data-theme="dark"] #page-header.nav-fixed #nav {
-    background: rgba(0, 0, 0, 0.7) !important;
+    background: rgba(53, 48, 39, 0.86) !important;
 }
 
 /* 夜间模式遮罩 */
-[data-theme="dark"] #recent-posts > .recent-post-item,
+[data-theme="dark"] #recent-posts .recent-post-item,
 [data-theme="dark"] #aside-content .card-widget,
 [data-theme="dark"] div#post,
 [data-theme="dark"] div#archive,
