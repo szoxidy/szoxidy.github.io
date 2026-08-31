@@ -403,23 +403,45 @@ div#archive {
 
 
 /* 阅读模式 */
+.read-mode #page-header.post-bg {
+    height: 260px !important;
+    min-height: 260px !important;
+}
+
+.read-mode #page-header.post-bg #post-info {
+    top: 50% !important;
+}
+
 .read-mode #aside-content .card-widget {
-    background: rgba(158, 204, 171, 0.5) !important;
+    background: transparent !important;
 }
 
 .read-mode div#post {
-    background: rgba(158, 204, 171, 0.5) !important;
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 0 !important;
 }
 
 /* 夜间模式下的阅读模式 */
 [data-theme="dark"] .read-mode #aside-content .card-widget {
-    background: rgba(25, 25, 25, 0.9) !important;
+    background: transparent !important;
     color: #ffffff;
 }
 
 [data-theme="dark"] .read-mode div#post {
-    background: rgba(25, 25, 25, 0.9) !important;
+    background: transparent !important;
     color: #ffffff;
+}
+
+@media screen and (max-width: 768px) {
+    .read-mode #page-header.post-bg {
+        height: 220px !important;
+        min-height: 220px !important;
+    }
+}
+
+[data-theme="light"] .read-mode {
+    --hlexpand-bg: linear-gradient(180deg, rgba(247, 247, 247, 0.2), #f7f7f7 82%);
 }
 
 
