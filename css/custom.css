@@ -307,6 +307,32 @@ html.with-fancybox {
     background: transparent;
 }
 
+*::selection {
+    background: #ffdf97;
+    color: #251a00;
+}
+
+[data-theme="dark"] *::selection {
+    background: #5a4300;
+    color: #ffdf97;
+}
+
+.flink-list-item.flink-style-flexcard {
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    background-image: linear-gradient(rgba(210, 210, 210, 0.58), rgba(210, 210, 210, 0.58)), var(--flink-siteshot);
+    background-position: center;
+    background-size: cover;
+}
+
+.flink-list-item.flink-style-flexcard::before {
+    display: none !important;
+}
+
+[data-theme="dark"] .flink-list-item.flink-style-flexcard {
+    border-color: rgba(255, 255, 255, 0.16);
+    background-image: linear-gradient(rgba(55, 55, 55, 0.62), rgba(55, 55, 55, 0.62)), var(--flink-siteshot);
+}
+
 #rightside > div > button,
 #rightside > div > a {
     background-color: #dac9a5 !important;
