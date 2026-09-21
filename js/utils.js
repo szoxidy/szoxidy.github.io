@@ -248,6 +248,22 @@
             }
           } else {
             options = {
+              mainClass: 'blog-lightbox',
+              idle: false,
+              zoomEffect: !window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+              fadeEffect: !window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+              l10n: {
+                MODAL: '图片查看器，按 Esc 关闭',
+                CLOSE: '关闭',
+                NEXT: '下一张',
+                PREV: '上一张',
+                ZOOM_IN: '放大',
+                ZOOM_OUT: '缩小',
+                TOGGLE_FULL: '原始尺寸 / 适应窗口',
+                TOGGLE_1TO1: '原始尺寸 / 适应窗口',
+                RESET: '重置图片',
+                TOGGLE_THUMBS: '缩略图'
+              },
               Hash: false,
               Carousel: {
                 transition: 'slide',
@@ -255,19 +271,31 @@
                   showOnStart: false
                 },
                 Toolbar: {
+                  items: {
+                    more: {
+                      tpl: `<details class="blog-lightbox-more">
+                        <summary class="f-button" title="更多图片操作" aria-label="更多图片操作">
+                          <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>
+                        </summary>
+                        <div class="blog-lightbox-more__panel" role="group" aria-label="旋转与翻转">
+                          <button type="button" data-panzoom-action="rotateCCW">向左旋转</button>
+                          <button type="button" data-panzoom-action="rotateCW">向右旋转</button>
+                          <button type="button" data-panzoom-action="flipX">水平翻转</button>
+                          <button type="button" data-panzoom-action="flipY">垂直翻转</button>
+                        </div>
+                      </details>`
+                    }
+                  },
                   display: {
                     left: ['counter'],
                     middle: [
                       'zoomIn',
                       'zoomOut',
                       'toggle1to1',
-                      'rotateCCW',
-                      'rotateCW',
-                      'flipX',
-                      'flipY',
-                      'reset'
+                      'reset',
+                      'more'
                     ],
-                    right: ['autoplay', 'thumbs', 'close']
+                    right: ['thumbs', 'close']
                   }
                 },
                 Zoomable: {

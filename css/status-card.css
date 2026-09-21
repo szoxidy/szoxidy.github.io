@@ -1,0 +1,94 @@
+/* Status history shares the announcement card's surface and typography. */
+.blog-status {
+    --status-up: #32c984;
+    --status-degraded: #936016;
+    --status-down: #b83c3c;
+    --status-unknown: #6e747b;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(128, 128, 128, 0.18);
+    font-size: 14px;
+}
+.blog-status__uptime,
+.blog-status__dates,
+.blog-status__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+.blog-status__uptime { font-size: 13px; }
+.blog-status__uptime strong { font-size: 17px; font-variant-numeric: tabular-nums; }
+.blog-status__history {
+    display: grid;
+    grid-template-columns: repeat(15, minmax(0, 1fr));
+    gap: 3px;
+    margin-top: 10px;
+}
+.blog-status__day { height: 22px; border-radius: 3px; background: var(--status-unknown); }
+.blog-status__day--reveal {
+    transform-origin: center bottom;
+    animation: status-day-reveal 360ms ease-out var(--status-reveal-delay, 0ms) both;
+}
+@keyframes status-day-reveal {
+    from { opacity: 0; transform: translateY(3px) scaleY(0.75); }
+    to { opacity: 1; transform: translateY(0) scaleY(1); }
+}
+.blog-status__day[data-state="up"] { background: var(--status-up); }
+.blog-status__day[data-state="degraded"] { background: var(--status-degraded); }
+.blog-status__day[data-state="down"] { background: var(--status-down); }
+.blog-status__day:hover { box-shadow: 0 0 0 2px var(--card-bg, #fff), 0 0 0 3px var(--status-up); }
+.blog-status__day:focus-visible,
+.blog-status__refresh:focus-visible,
+.blog-status__link:focus-visible { outline: 2px solid var(--font-color); outline-offset: 3px; }
+.blog-status__dates { margin-top: 4px; font-size: 11px; opacity: 0.7; }
+.blog-status [hidden] { display: none; }
+.blog-status__footer { flex-wrap: wrap; margin-top: 7px; font-size: 12px; }
+.blog-status__refresh {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    line-height: inherit;
+    cursor: pointer;
+    opacity: 0.7;
+}
+.blog-status__refresh:hover { opacity: 1; color: #21835a; }
+.blog-status__refresh:disabled { cursor: progress; }
+.blog-status__refresh i { display: inline-block; width: 1em; text-align: center; }
+.blog-status__refresh[aria-busy="true"] i { animation: status-refresh-spin 0.8s linear infinite; }
+@keyframes status-refresh-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+    .blog-status__day--reveal,
+    .blog-status__refresh[aria-busy="true"] i { animation: none; }
+}
+.blog-status__link { white-space: nowrap; }
+.blog-status__link i { margin-left: 3px; font-size: 10px; }
+[data-theme="dark"] .blog-status {
+    --status-up: #4ade95;
+    --status-degraded: #e0b666;
+    --status-down: #f08585;
+    --status-unknown: #a0a5ad;
+}
+
+.blog-status-tooltip {
+    position: fixed;
+    z-index: 3000;
+    min-width: 168px;
+    padding: 10px 13px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    background: #202b28;
+    color: #f5faf7;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+    pointer-events: none;
+    line-height: 1.6;
+}
+.blog-status-tooltip[hidden] { display: none; }
+.blog-status-tooltip__date { color: #b8c8c0; font-size: 12px; }
+.blog-status-tooltip__value { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.blog-status-tooltip[data-state="up"] .blog-status-tooltip__value { color: #6ee7a5; }
