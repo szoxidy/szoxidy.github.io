@@ -17,6 +17,9 @@
         const hundredths = Math.floor((value + Number.EPSILON) * 10_000);
         return `${(Math.min(hundredths, value < 1 ? 9_999 : 10_000) / 100).toFixed(2)}%`;
     };
+    const formatLatency = value => typeof value === 'number' && Number.isFinite(value) && value >= 0
+        ? `${Number(value.toFixed(2))} ms`
+        : '暂无数据';
     function dateTimestamp(value) {
         if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return NaN;
         const timestamp = Date.parse(`${value}T00:00:00Z`);
@@ -55,7 +58,12 @@
             const record = records.get(date);
             up += record?.up ?? 0;
             down += record?.down ?? 0;
-            return { date, ratio: record?.ratio ?? null };
+            return {
+                date, ratio: record?.ratio ?? null,
+                avgPing: record?.ratio != null ? record.avgPing : null,
+                minPing: record?.ratio != null ? record.minPing : null,
+                maxPing: record?.ratio != null ? record.maxPing : null,
+            };
         });
         return { uptime: percentage(up, down), days };
     }
@@ -79,9 +87,15 @@
             bar.className = animate ? 'blog-status__day blog-status__day--reveal' : 'blog-status__day';
             if (animate) bar.setAttribute('style', `--status-reveal-delay: ${index * 65}ms`);
             bar.dataset.state = day.ratio === null ? 'unknown' : day.ratio >= 0.9 ? 'up' : day.ratio > 0 ? 'degraded' : 'down';
-            const label = `${day.date}（UTC）：${formatUptime(day.ratio)}`;
+            const avgPing = formatLatency(day.avgPing);
+            const minPing = formatLatency(day.minPing);
+            const maxPing = formatLatency(day.maxPing);
+            const label = `${day.date}（UTC）：${formatUptime(day.ratio)}；平均延迟 ${avgPing}；最低延迟 ${minPing}；最高延迟 ${maxPing}`;
             bar.dataset.statusDate = day.date;
             bar.dataset.statusValue = formatUptime(day.ratio);
+            bar.dataset.statusAvgPing = avgPing;
+            bar.dataset.statusMinPing = minPing;
+            bar.dataset.statusMaxPing = maxPing;
             bar.setAttribute('role', 'listitem');
             bar.setAttribute('aria-label', label);
             bar.tabIndex = 0;

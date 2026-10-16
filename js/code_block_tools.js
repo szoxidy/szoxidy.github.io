@@ -6,68 +6,19 @@
     const copyButtonFeedbackDuration = 1200;
     const copyButtonFeedbackTimers = new WeakMap();
     const heightLimitRefreshers = new WeakMap();
+    const lineSyncs = new WeakMap();
     let resizeFrame = null;
-    let copyToastTimer = null;
-    let copyToastRemovalTimer = null;
     let activeFullpage = null;
 
-    const removeCopyToast = toast => {
-        if (!toast) {
-            return;
-        }
-
-        window.clearTimeout(copyToastTimer);
-        window.clearTimeout(copyToastRemovalTimer);
-        toast.classList.remove('is-visible');
-        toast.classList.add('is-leaving');
-        copyToastRemovalTimer = window.setTimeout(() => toast.remove(), 220);
-    };
-
     const showCopyToast = isSuccess => {
-        const previousToast = document.querySelector('.code-copy-toast');
-
-        if (previousToast) {
-            previousToast.remove();
-        }
-
-        window.clearTimeout(copyToastTimer);
-        window.clearTimeout(copyToastRemovalTimer);
-
-        const toast = document.createElement('div');
-        toast.className = `code-copy-toast ${isSuccess ? 'is-success' : 'is-error'}`;
-        toast.setAttribute('role', 'status');
-        toast.setAttribute('aria-live', 'polite');
-
-        const statusIcon = document.createElement('i');
-        statusIcon.className = `fas ${isSuccess ? 'fa-check' : 'fa-exclamation-triangle'} code-copy-toast__icon`;
-
-        const content = document.createElement('div');
-        content.className = 'code-copy-toast__content';
-
-        const title = document.createElement('strong');
-        title.textContent = isSuccess ? '复制成功' : '复制失败';
-
-        const description = document.createElement('span');
-        description.textContent = isSuccess ? '代码已复制到剪贴板' : '请手动选择代码复制';
-
-        const closeButton = document.createElement('button');
-        closeButton.className = 'code-copy-toast__close';
-        closeButton.type = 'button';
-        closeButton.setAttribute('aria-label', '关闭提示');
-        closeButton.innerHTML = '<i class="fas fa-times" aria-hidden="true"></i>';
-        closeButton.addEventListener('click', () => removeCopyToast(toast));
-
-        const progress = document.createElement('div');
-        progress.className = 'code-copy-toast__progress';
-        progress.setAttribute('aria-hidden', 'true');
-
-        content.append(title, description);
-        toast.style.setProperty('--code-copy-toast-duration', `${copyToastDuration}ms`);
-        toast.append(statusIcon, content, closeButton, progress);
-        document.body.appendChild(toast);
-
-        window.requestAnimationFrame(() => toast.classList.add('is-visible'));
-        copyToastTimer = window.setTimeout(() => removeCopyToast(toast), copyToastDuration);
+        window.siteNotify({
+            title: isSuccess ? '复制成功' : '复制失败',
+            message: isSuccess ? '代码已复制到剪贴板' : '请手动选择代码复制',
+            type: isSuccess ? 'success' : 'error',
+            duration: copyToastDuration,
+            key: 'code-copy',
+            variant: 'code'
+        });
     };
 
     const writeClipboard = async text => {
@@ -228,6 +179,7 @@
     };
 
     const syncLineHeights = figure => {
+        if (!figure.isConnected) return;
         // Transformed rectangles during fullscreen motion aren't layout line heights.
         if (activeFullpage?.figure === figure && activeFullpage.animation?.playState === 'running') return;
         resetLineHeights(figure);
@@ -240,19 +192,33 @@
         const codeLines = figure.querySelectorAll('.code .line');
         const numberLines = figure.querySelectorAll('.gutter .line');
 
-        codeLines.forEach((line, index) => {
-            const numberLine = numberLines[index];
-
-            if (numberLine) {
-                numberLine.style.height = `${Math.ceil(line.getBoundingClientRect().height)}px`;
-            }
+        // Batch layout reads before writes so long wrapped blocks don't reflow per row.
+        const heights = Array.from(codeLines, line => Math.ceil(line.getBoundingClientRect().height));
+        heights.forEach((height, index) => {
+            if (numberLines[index]) numberLines[index].style.height = `${height}px`;
         });
         heightLimitRefreshers.get(figure)?.();
     };
 
     const scheduleLineSync = figure => {
-        window.requestAnimationFrame(() => syncLineHeights(figure));
-        window.setTimeout(() => syncLineHeights(figure), 300);
+        let pending = lineSyncs.get(figure);
+        if (!pending) {
+            pending = { frame: null, timer: null };
+            lineSyncs.set(figure, pending);
+        }
+        if (pending.frame === null) {
+            pending.frame = window.requestAnimationFrame(() => {
+                pending.frame = null;
+                syncLineHeights(figure);
+            });
+        }
+        window.clearTimeout(pending.timer);
+        // Retain a final measurement after the existing CSS transitions settle.
+        pending.timer = window.setTimeout(() => {
+            pending.timer = null;
+            syncLineHeights(figure);
+            if (pending.frame === null) lineSyncs.delete(figure);
+        }, 300);
     };
 
     const wrapCodeContent = (figure, toolbar) => {
@@ -290,9 +256,14 @@
         // A fixed pixel height can leave half a line number above the footer.
         const measureLimit = () => {
             const panelTop = codePanel.getBoundingClientRect().top;
-            const boundaries = codeLines.slice(1).map(line => line.getBoundingClientRect().top - panelTop);
-            const lastBoundary = boundaries.filter(height => height > 0 && height <= renderedLimit).at(-1);
-            return Math.floor(lastBoundary || boundaries.find(height => height > 0) || renderedLimit);
+            let boundary = 0;
+            for (let index = 1; index < codeLines.length; index++) {
+                const height = codeLines[index].getBoundingClientRect().top - panelTop;
+                if (height <= 0) continue;
+                if (height > renderedLimit) return Math.floor(boundary || height);
+                boundary = height;
+            }
+            return Math.floor(boundary || renderedLimit);
         };
         let collapsedHeight = measureLimit();
         const fullHeight = codePanel.scrollHeight;
