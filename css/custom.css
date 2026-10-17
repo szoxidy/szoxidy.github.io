@@ -1,21 +1,21 @@
 :root {
-  --palette-primary: #55b9ec;
-  --palette-secondary: #c2e9fb;
-  --palette-strong: #367595;
-  --palette-hover: #306783;
-  --palette-soft: #ebf7fd;
-  --palette-muted: #c4e7f8;
-  --palette-selection: #c9e9f9;
-  --palette-ink: #132934;
-  --palette-dark-accent: #99d5f4;
-  --palette-dark-hover: #b4e0f7;
-  --palette-dark-selection: #1e4153;
-  --palette-dark-surface: #272b31;
-  --palette-button: #7ac8f0;
-  --palette-button-hover: #8fd1f2;
-  --palette-toolbar: #aadcf6;
-  --palette-dark-toolbar: #355769;
-  --palette-glow: #cceaf9;
+  --palette-primary: #b58a36;
+  --palette-secondary: #496548;
+  --palette-strong: #8d6c2a;
+  --palette-hover: #7c5f25;
+  --palette-soft: #f6f1e7;
+  --palette-muted: #e5d6b9;
+  --palette-selection: #e7dabf;
+  --palette-ink: #281e0c;
+  --palette-dark-accent: #d3b986;
+  --palette-dark-hover: #decca7;
+  --palette-dark-selection: #3f3013;
+  --palette-dark-surface: #2a2a2b;
+  --palette-button: #c5a462;
+  --palette-button-hover: #ceb27a;
+  --palette-toolbar: #dac59b;
+  --palette-dark-toolbar: #56472b;
+  --palette-glow: #e9dcc3;
 }
 
 /* 页脚与头图透明 */
@@ -119,11 +119,12 @@
     padding: 0.9rem 0.75rem 0.9rem 1rem;
     border: 1px solid var(--accent-border);
     border-radius: 8px;
-    background: rgba(255, 255, 255, 0.96);
-    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.16);
+    background: var(--notification-bg);
+    box-shadow: var(--notification-shadow);
     opacity: 0;
     pointer-events: auto;
-    transform: translateX(-1.5rem);
+    transform: translateX(-1.5rem) scale(0.96);
+    transform-origin: top left;
     transition: opacity 0.2s ease, transform 0.2s ease;
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
@@ -131,7 +132,14 @@
 
 .site-notification.is-visible {
     opacity: 1;
-    transform: translateX(0);
+    transform: none;
+    animation: notification-pop-in 680ms cubic-bezier(.25, .65, .3, 1);
+}
+
+@keyframes notification-pop-in {
+    0% { opacity: 0; transform: translateX(-24px) scale(0.96); }
+    75% { opacity: 1; transform: translateX(2px) scale(1.008); }
+    100% { opacity: 1; transform: none; }
 }
 
 .site-notification__icon {
@@ -141,15 +149,15 @@
 }
 
 .site-notification--success .site-notification__icon {
-    color: #67c23a;
+    color: var(--notice-success);
 }
 
 .site-notification--warning .site-notification__icon {
-    color: #e6a23c;
+    color: var(--notice-warning);
 }
 
 .site-notification--error .site-notification__icon {
-    color: #f56c6c;
+    color: var(--notice-error);
 }
 
 .site-notification__content {
@@ -158,14 +166,14 @@
 
 .site-notification__title {
     display: block;
-    color: #1f2d3d;
+    color: var(--notification-title);
     font-size: 0.95rem;
     line-height: 1.5;
 }
 
 .site-notification__message {
     margin: 0.2rem 0 0;
-    color: #4b5563;
+    color: var(--notification-text);
     font-size: 0.875rem;
     line-height: 1.65;
     overflow-wrap: anywhere;
@@ -178,13 +186,13 @@
     padding: 0;
     border: 0;
     background: transparent;
-    color: #909399;
+    color: var(--notification-close);
     cursor: pointer;
     place-items: center;
 }
 
 .site-notification__close:hover {
-    color: #606266;
+    color: var(--notification-close-hover);
 }
 
 .site-notification__progress {
@@ -193,17 +201,17 @@
     left: 0;
     width: 100%;
     height: 3px;
-    background: var(--palette-primary);
+    background: var(--theme-color);
     transform-origin: left;
 }
 .site-notification--success .site-notification__progress {
-    background: #67c23a;
+    background: var(--notice-success);
 }
 .site-notification--warning .site-notification__progress {
-    background: #e6a23c;
+    background: var(--notice-warning);
 }
 .site-notification--error .site-notification__progress {
-    background: #f56c6c;
+    background: var(--notice-error);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -211,24 +219,7 @@
         transition: none;
         transform: none;
     }
-}
-
-[data-theme="dark"] .site-notification {
-    border-color: var(--accent-border);
-    background: rgba(31, 31, 31, 0.96);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.36);
-}
-
-[data-theme="dark"] .site-notification__title {
-    color: #f5f7fa;
-}
-
-[data-theme="dark"] .site-notification__message {
-    color: #d1d5db;
-}
-
-[data-theme="dark"] .site-notification__close:hover {
-    color: #f5f7fa;
+    .site-notification.is-visible { animation: none; }
 }
 
 #page-header::before {
@@ -279,19 +270,24 @@
     position: fixed;
     z-index: 1002;
     box-sizing: border-box;
-    padding: 28px 32px;
-    border-radius: 18px;
-    background: var(--card-bg);
+    padding: 40px;
+    border-radius: 16px;
+    background: var(--card-surface);
     box-shadow: var(--card-box-shadow);
     color: var(--font-color);
     pointer-events: none;
     will-change: transform, opacity;
 }
 
+@media (max-width: 768px) {
+    .article-entry-preview { padding: 24px 18px; }
+}
+
 .article-entry-title {
     margin-bottom: 14px;
     color: var(--text-highlight-color);
-    font-size: clamp(1.5rem, 3vw, 2rem);
+    font-size: clamp(1.6rem, 3vw, 2rem);
+    font-weight: 400;
     line-height: 1.45;
     text-align: center;
 }
@@ -338,6 +334,12 @@
 .article-entry-dots span:nth-child(6) { animation-delay: 0.3s; }
 .article-entry-dots span:nth-child(7) { animation-delay: 0.2s; }
 .article-entry-dots span:nth-child(8) { animation-delay: 0.1s; }
+
+/* PJAX 衔接由正文淡入管理，避免主题对整个布局再次上移。 */
+body.article-entry-pending #content-inner,
+#body-wrap.post:has(#post.article-entry-managed) #content-inner {
+    animation: none;
+}
 
 #body-wrap.post #post {
     animation: article-card-enter 0.45s cubic-bezier(.22, 1, .36, 1);
@@ -422,7 +424,7 @@ body.article-entry-pending #body-wrap.post #post {
     margin: 30px 0 8px;
     border: 1px solid var(--light-grey);
     border-radius: 10px;
-    background: rgba(128, 128, 128, 0.025);
+    background: var(--neutral-wash);
 }
 
 #article-container .article-history > summary {
@@ -567,7 +569,7 @@ body.article-entry-pending #body-wrap.post #post {
     margin: 16px 0 24px;
     padding: 10px 18px;
     border-left: 3px solid var(--light-grey);
-    background: rgba(128, 128, 128, 0.025);
+    background: var(--neutral-wash);
 }
 
 #article-container .friend-site-info > div {
@@ -626,8 +628,8 @@ body.article-entry-pending #body-wrap.post #post {
     max-width: calc(100% - 32px);
     height: auto;
     margin: 0 auto 12px;
-    color: var(--palette-primary);
-    filter: drop-shadow(0 0 4px color-mix(in srgb, var(--palette-primary) 70%, transparent))
+    color: var(--brand-color);
+    filter: drop-shadow(0 0 4px var(--brand-glow-near))
         drop-shadow(0 0 10px var(--brand-glow));
 }
 
@@ -645,10 +647,10 @@ body.article-entry-pending #body-wrap.post #post {
 }
 
 #page-header.full_page #scroll-down .scroll-down-effects {
-    color: #fff;
+    color: var(--on-solid);
     font-size: 42px;
     line-height: 1.2;
-    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+    text-shadow: var(--header-scroll-shadow);
 }
 
 .lucide-house {
@@ -667,8 +669,15 @@ body.article-entry-pending #body-wrap.post #post {
     }
 }
 
-/* 配色入口在 _config.butterfly.yml 的 site_palette；组件只使用语义变量。 */
+/* 统一配色表：主辅色在 _config.butterfly.yml 的 site_palette，构建派生见 scripts/css-bundle.js。
+   本文件集中维护组件颜色、混色比例、阴影和深浅模式；组件只引用变量。
+   固定语义色与代码选区不随主题色变化，transparent / currentColor 留在组件中。 */
 :root {
+    /* 主题联动与通用表面 */
+    --on-solid: #fff;
+    --strong-text: #252525;
+    --neutral-wash: rgba(128, 128, 128, 0.025);
+    --strong-accent-bg: var(--palette-strong);
     --theme-color: var(--palette-primary);
     --default-bg-color: var(--palette-primary);
     --accent-color: var(--palette-strong);
@@ -678,14 +687,17 @@ body.article-entry-pending #body-wrap.post #post {
     --accent-wash: color-mix(in srgb, var(--palette-primary) 8%, transparent);
     --selection-bg: var(--palette-selection);
     --selection-text: var(--palette-ink);
-    --code-selection-bg: color-mix(in srgb, var(--palette-primary) 34%, transparent);
+    --code-selection-bg: rgba(148, 163, 184, 0.32);
     --code-selection-text: #f1f5f9;
     --toolbar-bg: var(--palette-toolbar);
     --toolbar-hover: var(--palette-button);
-    --toolbar-text: var(--palette-ink);
+    --toolbar-text: var(--on-solid);
     --active-bg: var(--selection-bg);
     --active-text: var(--selection-text);
-    --brand-glow: var(--palette-glow);
+    /* 字标用粉色与银杏壁纸区分，其余组件继续跟随所选方案。 */
+    --brand-color: #f29bb2;
+    --brand-glow-near: color-mix(in srgb, var(--brand-color) 70%, transparent);
+    --brand-glow: color-mix(in srgb, var(--brand-color) 30%, #fff);
     --btn-bg: var(--palette-button);
     --btn-hover-color: var(--palette-button-hover);
     --btn-text: var(--palette-ink);
@@ -697,10 +709,13 @@ body.article-entry-pending #body-wrap.post #post {
     --hr-before-color: var(--palette-primary);
     --trans-light: rgba(255, 255, 255, 0.94);
     --trans-dark: color-mix(in srgb, var(--palette-dark-surface) 86%, transparent);
+    --card-surface: var(--trans-light);
     --nav-surface: rgba(255, 255, 255, 0.9);
     --border-style: 1px solid var(--accent-border);
     --backdrop-filter: none;
     --house-icon-color: #111111;
+    --github-icon-color: #24292e;
+    --email-icon-color: #4a7dbe;
     --scrollbar-color: var(--palette-primary);
     --scrollbar-color-alt: var(--palette-secondary);
     --scrollbar-track: color-mix(in srgb, var(--palette-primary) 10%, transparent);
@@ -717,10 +732,77 @@ body.article-entry-pending #body-wrap.post #post {
     --comment-text: color-mix(in srgb, var(--palette-ink) 35%, #504b41);
     --comment-code-bg: var(--accent-wash);
     --comment-on-accent: var(--palette-ink);
+
+    /* 通知：状态色固定，普通通知表面随深浅模式切换 */
+    --notice-success: #67c23a;
+    --notice-warning: #e6a23c;
+    --notice-error: #f56c6c;
+    --notification-bg: rgba(255, 255, 255, 0.96);
+    --notification-shadow: 0 12px 32px rgba(15, 23, 42, 0.16);
+    --notification-title: #1f2d3d;
+    --notification-text: #4b5563;
+    --notification-close: #909399;
+    --notification-close-hover: #606266;
+
+    /* 页头、封面与友链 */
+    --header-nav-text: rgba(255, 255, 255, 0.76);
+    --header-scroll-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+    --cover-shade: linear-gradient(180deg, rgba(18, 25, 40, 0.12), rgba(18, 25, 40, 0.62));
+    --cover-title-shadow: 0 1px 5px rgba(0, 0, 0, 0.45);
+    --cover-meta-text: rgba(255, 255, 255, 0.9);
+    --cover-meta-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+    --friend-mask: rgba(210, 210, 210, 0.58);
+    --friend-border: rgba(255, 255, 255, 0.45);
+    --friend-bg: #f5f6f7;
+    --friend-hover-shadow: 0 6px 16px rgba(20, 28, 40, 0.16);
+    --welcome-dark-bg: #212121;
+
+    /* 灯箱始终使用深色控制面板 */
+    --lightbox-bg: rgba(18, 20, 24, 0.94);
+    --lightbox-control-wash: rgba(255, 255, 255, 0.12);
+    --lightbox-text: #e8e9ed;
+    --lightbox-caption: #bfc3cc;
+    --lightbox-control-bg: rgba(43, 46, 53, 0.88);
+    --lightbox-control-shadow: 0 8px 28px rgba(0, 0, 0, 0.22);
+    --lightbox-menu-border: rgba(255, 255, 255, 0.14);
+    --lightbox-menu-bg: #2b2e35;
+    --lightbox-menu-shadow: 0 8px 28px rgba(0, 0, 0, 0.3);
+    --lightbox-focus: #b9cae2;
+
+    /* 评论与代码工具，代码选区固定值见上方 */
+    --comment-tooltip-bg: var(--palette-primary);
+    --comment-popover-shadow: 0 10px 28px rgba(40, 34, 23, 0.12);
+    --comment-toggle-shadow: 0 3px 7px rgba(0, 0, 0, 0.14);
+    --code-error: #e85d5d;
+    --code-tooltip-border: rgba(255, 255, 255, 0.08);
+    --code-tooltip-bg: rgba(28, 28, 28, 0.96);
+    --code-tooltip-shadow: 0 4px 12px rgba(0, 0, 0, 0.24);
+    --code-tooltip-text: #d7d7d7;
+    --code-expand-border: rgba(255, 255, 255, 0.05);
+    --code-toast-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    --code-toast-progress: rgba(255, 255, 255, 0.95);
+    --code-toast-close-hover: rgba(255, 255, 255, 0.16);
+    --read-code-expand-bg: linear-gradient(180deg, rgba(247, 247, 247, 0.2), #f7f7f7 82%);
+
+    /* 状态卡：在线率语义色独立于主题，浮层固定深色 */
+    --status-up: #32c984;
+    --status-degraded: #936016;
+    --status-down: #b83c3c;
+    --status-unknown: #6e747b;
+    --status-border: rgba(128, 128, 128, 0.18);
+    --status-tooltip-border: rgba(255, 255, 255, 0.15);
+    --status-tooltip-bg: #202b28;
+    --status-tooltip-text: #f5faf7;
+    --status-tooltip-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+    --status-tooltip-muted: #b8c8c0;
+    --status-tooltip-up: #6ee7a5;
 }
 
 [data-theme="dark"] {
+    --strong-text: #f2f2f2;
     --house-icon-color: #e3e7ec;
+    --github-icon-color: var(--house-icon-color);
+    --email-icon-color: var(--house-icon-color);
     --accent-color: var(--palette-dark-accent);
     --accent-hover: var(--palette-dark-hover);
     --accent-soft: var(--palette-dark-selection);
@@ -728,15 +810,17 @@ body.article-entry-pending #body-wrap.post #post {
     --accent-wash: color-mix(in srgb, var(--palette-dark-accent) 12%, transparent);
     --selection-bg: var(--palette-dark-selection);
     --selection-text: var(--palette-selection);
-    --code-selection-bg: color-mix(in srgb, var(--palette-dark-accent) 28%, transparent);
     --toolbar-bg: var(--palette-dark-toolbar);
     --toolbar-hover: var(--palette-dark-selection);
-    --toolbar-text: var(--palette-selection);
+    --toolbar-text: var(--on-solid);
     --active-bg: var(--selection-bg);
     --active-text: var(--selection-text);
+    --card-surface: var(--trans-dark);
     --nav-surface: var(--trans-dark);
-    --btn-bg: var(--palette-dark-accent);
-    --btn-hover-color: var(--palette-dark-hover);
+    --btn-bg: var(--palette-dark-toolbar);
+    --btn-hover-color: var(--palette-strong);
+    --btn-text: var(--on-solid);
+    --comment-tooltip-bg: var(--palette-dark-toolbar);
     --pseudo-hover: var(--palette-dark-toolbar);
     --scrollbar-color: var(--palette-strong);
     --scrollbar-color-alt: color-mix(in srgb, var(--palette-secondary) 60%, #252525);
@@ -749,6 +833,18 @@ body.article-entry-pending #body-wrap.post #post {
     --comment-placeholder: #b8cbd8;
     --comment-text: color-mix(in srgb, var(--palette-selection) 15%, #e4e0d8);
     --comment-on-accent: var(--palette-ink);
+    --notification-bg: rgba(31, 31, 31, 0.96);
+    --notification-shadow: 0 12px 32px rgba(0, 0, 0, 0.36);
+    --notification-title: #f5f7fa;
+    --notification-text: #d1d5db;
+    --notification-close-hover: var(--notification-title);
+    --friend-mask: color-mix(in srgb, var(--palette-dark-surface) 86%, transparent);
+    --friend-border: var(--friend-bg);
+    --friend-bg: #20232a;
+    --status-up: #4ade95;
+    --status-degraded: #e0b666;
+    --status-down: #f08585;
+    --status-unknown: #a0a5ad;
 }
 
 /* These native Butterfly rules otherwise keep their compiled light-mode color. */
@@ -770,7 +866,7 @@ body.article-entry-pending #body-wrap.post #post {
     background: var(--btn-bg);
     color: var(--btn-text);
 }
-#card-info-btn i { color: #fff; }
+#card-info-btn i { color: var(--on-solid); }
 #card-info-btn:hover { background: var(--btn-hover-color); }
 .snackbar-container { background: var(--btn-bg) !important; color: var(--btn-text) !important; }
 
@@ -785,28 +881,23 @@ html.with-fancybox {
 #article-container strong,
 #article-container b {
     font-weight: 700;
-    color: #252525;
+    color: var(--strong-text);
     -webkit-text-stroke: 0.025em currentColor;
-}
-
-[data-theme="dark"] #article-container strong,
-[data-theme="dark"] #article-container b {
-    color: #f2f2f2;
 }
 
 /* Fancybox 6: reserve space for controls instead of covering the image. */
 .blog-lightbox {
-    --fancybox-backdrop-bg: rgba(18, 20, 24, 0.94);
+    --fancybox-backdrop-bg: var(--lightbox-bg);
     --f-button-width: 40px;
     --f-button-height: 40px;
     --f-button-border-radius: 10px;
     --f-button-bg: transparent;
-    --f-button-hover-bg: rgba(255, 255, 255, 0.12);
-    --f-button-color: #e8e9ed;
+    --f-button-hover-bg: var(--lightbox-control-wash);
+    --f-button-color: var(--lightbox-text);
     --f-button-svg-width: 21px;
     --f-button-svg-height: 21px;
     --f-toolbar-text-shadow: none;
-    --f-caption-color: #bfc3cc;
+    --f-caption-color: var(--lightbox-caption);
     --f-caption-padding: 14px 8px 0;
     --f-caption-font: 13px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
 }
@@ -828,18 +919,18 @@ html.with-fancybox {
     flex-wrap: nowrap;
     padding: 6px;
     gap: 3px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    border: 1px solid var(--lightbox-control-wash);
     border-radius: 16px;
-    background: rgba(43, 46, 53, 0.88);
-    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.22);
+    background: var(--lightbox-control-bg);
+    box-shadow: var(--lightbox-control-shadow);
 }
 
 .blog-lightbox .f-carousel__toolbar [data-fancybox-close] {
     position: fixed;
     top: max(18px, env(safe-area-inset-top));
     right: max(20px, env(safe-area-inset-right));
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    background: rgba(43, 46, 53, 0.88);
+    border: 1px solid var(--lightbox-control-wash);
+    background: var(--lightbox-control-bg);
     border-radius: 12px;
 }
 
@@ -874,10 +965,10 @@ html.with-fancybox {
     display: grid;
     width: 144px;
     padding: 6px;
-    border: 1px solid rgba(255, 255, 255, 0.14);
+    border: 1px solid var(--lightbox-menu-border);
     border-radius: 12px;
-    background: #2b2e35;
-    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3);
+    background: var(--lightbox-menu-bg);
+    box-shadow: var(--lightbox-menu-shadow);
 }
 
 .blog-lightbox-more__panel button {
@@ -885,7 +976,7 @@ html.with-fancybox {
     border: 0;
     border-radius: 7px;
     background: transparent;
-    color: #e8e9ed;
+    color: var(--lightbox-text);
     font: 13px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
     cursor: pointer;
 }
@@ -893,8 +984,8 @@ html.with-fancybox {
 .blog-lightbox-more__panel button:hover,
 .blog-lightbox-more__panel button:focus-visible,
 .blog-lightbox-more summary:focus-visible {
-    background: rgba(255, 255, 255, 0.12);
-    outline: 2px solid #b9cae2;
+    background: var(--lightbox-control-wash);
+    outline: 2px solid var(--lightbox-focus);
     outline-offset: 1px;
 }
 
@@ -976,22 +1067,28 @@ html.with-fancybox {
     color: var(--selection-text);
 }
 
-/* 深底代码保留高对比文字，选区使用同源半透明主色。 */
-#article-container figure.highlight *::selection {
+/* 代码选区固定灰白底与浅白文字，不随主题色变化。 */
+#article-container figure.highlight::selection,
+#article-container figure.highlight *::selection,
+#article-container pre::selection,
+#article-container pre *::selection,
+#twikoo pre::selection,
+#twikoo pre *::selection {
     background: var(--code-selection-bg);
     color: var(--code-selection-text);
 }
 
 /* 带网站截图的友链：头像和文字向两侧退场，保持布局稳定，卡片从中心轻轻放大。 */
 #article-container .flink-list > .flink-list-item[style*="--flink-siteshot"] {
-    --flink-mask: rgba(210, 210, 210, 0.58);
+    --flink-mask: var(--friend-mask);
     isolation: isolate;
-    border: 1px solid rgba(255, 255, 255, 0.45);
-    background-color: #f5f6f7;
+    border: 1px solid var(--friend-border);
+    background-color: var(--friend-bg);
     background-image: var(--flink-siteshot);
     background-position: center;
     background-size: cover;
     background-repeat: no-repeat;
+    background-clip: padding-box;
     transform: translateZ(0) scale(1);
     transform-origin: center;
     transition: transform 460ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 460ms ease;
@@ -999,18 +1096,15 @@ html.with-fancybox {
 
 #article-container .flink-list > .flink-list-item[style*="--flink-siteshot"]::before {
     display: block;
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
     z-index: 0;
     background: var(--flink-mask);
     opacity: 1;
     transform: none;
     pointer-events: none;
     transition: opacity 420ms ease;
-}
-
-[data-theme="dark"] #article-container .flink-list > .flink-list-item[style*="--flink-siteshot"] {
-    --flink-mask: rgba(55, 55, 55, 0.62);
-    border-color: rgba(255, 255, 255, 0.16);
-    background-color: #20232a;
 }
 
 #article-container .flink-list > .flink-list-item[style*="--flink-siteshot"] > a {
@@ -1041,7 +1135,7 @@ html.with-fancybox {
 @media (hover: hover) and (pointer: fine) {
     #article-container .flink-list > .flink-list-item[style*="--flink-siteshot"]:hover {
         transform: translateZ(0) scale(1.045);
-        box-shadow: 0 6px 16px rgba(20, 28, 40, 0.16);
+        box-shadow: var(--friend-hover-shadow);
     }
 
     #article-container .flink-list > .flink-list-item[style*="--flink-siteshot"]:hover::before {
@@ -1061,7 +1155,7 @@ html.with-fancybox {
 
 #article-container .flink-list > .flink-list-item[style*="--flink-siteshot"]:has(> a:focus-visible) {
     transform: translateZ(0) scale(1.045);
-    box-shadow: 0 6px 16px rgba(20, 28, 40, 0.16);
+    box-shadow: var(--friend-hover-shadow);
 }
 
 #article-container .flink-list > .flink-list-item[style*="--flink-siteshot"]:has(> a:focus-visible)::before {
@@ -1109,15 +1203,10 @@ html.with-fancybox {
     background-color: var(--wallpaper-shade) !important;
 }
 
-[data-theme="dark"] #card-info-btn {
-    background-color: var(--btn-bg) !important;
-    color: var(--btn-text) !important;
-}
-
 [data-theme="dark"] #page-header:not(.nav-fixed) #nav a,
 [data-theme="dark"] #page-header:not(.nav-fixed) #nav span.site-page,
 [data-theme="dark"] #page-header:not(.nav-fixed) #nav .site-name {
-    color: rgba(255, 255, 255, 0.76) !important;
+    color: var(--header-nav-text) !important;
 }
 
 /* 首页文章卡片 */
@@ -1125,7 +1214,7 @@ html.with-fancybox {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     height: auto;
-    background: var(--trans-light);
+    background: var(--card-surface);
     backdrop-filter: var(--backdrop-filter);
     -webkit-backdrop-filter: var(--backdrop-filter);
     border-radius: 8px;
@@ -1211,8 +1300,8 @@ html.with-fancybox {
 }
 
 #recent-posts .post-card-tags > a:hover {
-    background: var(--palette-strong);
-    color: #fff;
+    background: var(--strong-accent-bg);
+    color: var(--on-solid);
 }
 
 /* 封面铺满卡片顶部，标题和元信息叠在图片上，摘要位于下方。 */
@@ -1248,22 +1337,22 @@ html.with-fancybox {
 #recent-posts .recent-post-item > .post_cover::after {
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, rgba(18, 25, 40, 0.12), rgba(18, 25, 40, 0.62));
+    background: var(--cover-shade);
     content: '';
     pointer-events: none;
 }
 
 #recent-posts .recent-post-item > .post_cover + .recent-post-info > .article-title {
-    --post-title-color: #fff;
-    color: #fff;
-    text-shadow: 0 1px 5px rgba(0, 0, 0, 0.45);
+    --post-title-color: var(--on-solid);
+    color: var(--on-solid);
+    text-shadow: var(--cover-title-shadow);
 }
 
 #recent-posts .recent-post-item > .post_cover + .recent-post-info > .article-meta-wrap {
     margin-bottom: 24px;
-    color: rgba(255, 255, 255, 0.9);
-    --card-meta: rgba(255, 255, 255, 0.9);
-    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+    color: var(--cover-meta-text);
+    --card-meta: var(--cover-meta-text);
+    text-shadow: var(--cover-meta-shadow);
 }
 
 @media (max-width: 768px) {
@@ -1287,7 +1376,7 @@ html.with-fancybox {
 
 /* 首页侧栏卡片 */
 #aside-content .card-widget {
-    background: var(--trans-light);
+    background: var(--card-surface);
     backdrop-filter: var(--backdrop-filter);
     -webkit-backdrop-filter: var(--backdrop-filter);
     border-radius: 18px;
@@ -1337,7 +1426,7 @@ html.with-fancybox {
 div#post,
 div#page,
 div#archive {
-    background: var(--trans-light);
+    background: var(--card-surface);
     backdrop-filter: var(--backdrop-filter);
     -webkit-backdrop-filter: var(--backdrop-filter);
     border: var(--border-style);
@@ -1361,17 +1450,10 @@ div#page.nc {
     padding: 40px;
     border: 0;
     border-radius: 16px;
-    background: var(--trans-light);
+    background: var(--card-surface);
     backdrop-filter: var(--backdrop-filter);
     -webkit-backdrop-filter: var(--backdrop-filter);
 }
-
-[data-theme="dark"] div#post,
-[data-theme="dark"] div#page.page-split,
-[data-theme="dark"] div#page.nc { background: transparent; }
-
-[data-theme="dark"] #post > .post-body,
-[data-theme="dark"] #page.page-split > .page-body { background: var(--trans-dark); }
 
 @media (max-width: 768px) {
     #post > .post-body,
@@ -1388,15 +1470,6 @@ div#page.nc {
 [data-theme="dark"] #page-header.nav-fixed #nav {
     background: var(--nav-surface) !important;
 }
-
-/* 夜间模式遮罩 */
-[data-theme="dark"] #recent-posts .recent-post-item,
-[data-theme="dark"] #aside-content .card-widget,
-[data-theme="dark"] div#archive,
-[data-theme="dark"] div#page {
-    background: var(--trans-dark);
-}
-
 
 /* 阅读模式：正文已包入 .post-body，避免命中主题的直接子节点隐藏规则。 */
 .read-mode #post > .post-body:not(#post-info):not(.post-content) { display: block !important; }
@@ -1426,13 +1499,13 @@ div#page.nc {
 /* 夜间模式下的阅读模式 */
 [data-theme="dark"] .read-mode #aside-content .card-widget {
     background: transparent !important;
-    color: #ffffff;
+    color: var(--on-solid);
 }
 
 [data-theme="dark"] .read-mode div#post,
 [data-theme="dark"] .read-mode #post > .post-body {
     background: transparent !important;
-    color: #ffffff;
+    color: var(--on-solid);
 }
 
 @media screen and (max-width: 768px) {
@@ -1443,7 +1516,7 @@ div#page.nc {
 }
 
 [data-theme="light"] .read-mode {
-    --hlexpand-bg: linear-gradient(180deg, rgba(247, 247, 247, 0.2), #f7f7f7 82%);
+    --hlexpand-bg: var(--read-code-expand-bg);
 }
 
 
@@ -1456,7 +1529,7 @@ div#page.nc {
 }
 
 [data-theme="dark"] #welcome-info {
-    background: #212121;
+    background: var(--welcome-dark-bg);
 }
 
 /* 右键菜单 */
@@ -1744,8 +1817,12 @@ div#page.nc {
 #twikoo .comment-extra-field .tk-input-group__prepend {
     display: flex;
     align-items: center;
-    flex: 0 0 auto;
-    width: auto;
+    justify-content: center;
+    flex: 0 0 44px;
+    width: 44px;
+    height: 46px;
+    line-height: normal;
+    box-sizing: border-box;
 }
 
 #twikoo .tk-meta-input:has(.blog-math-captcha) {
@@ -1802,8 +1879,8 @@ div#page.nc {
     max-width: 100%;
     padding: 4px 10px;
     border-radius: 5px;
-    background: var(--palette-primary);
-    color: #fff;
+    background: var(--comment-tooltip-bg);
+    color: var(--on-solid);
     font-size: 14px;
     line-height: 1.6;
     opacity: 0;
@@ -1815,11 +1892,15 @@ div#page.nc {
 
 #twikoo .blog-math-captcha:hover .blog-captcha-tooltip,
 #twikoo .blog-math-captcha:focus-within .blog-captcha-tooltip,
-#twikoo .comment-extra-field:hover::after,
-#twikoo .comment-extra-field:focus-within::after {
+#twikoo .comment-extra-panel[data-tooltip-ready="true"] .comment-extra-field:hover::after,
+#twikoo .comment-extra-panel[data-tooltip-ready="true"] .comment-extra-field:focus-within::after {
     opacity: 1;
     visibility: visible;
     transform: none;
+}
+
+#twikoo .comment-extra-panel:not([data-tooltip-ready="true"]) .comment-extra-field::after {
+    transition: none;
 }
 
 #twikoo .blog-captcha-question {
@@ -2039,7 +2120,7 @@ div#page.nc {
     border: 0;
     border-radius: 10px;
     background: var(--card-bg);
-    box-shadow: 0 10px 28px rgba(40, 34, 23, 0.12);
+    box-shadow: var(--comment-popover-shadow);
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
@@ -2090,14 +2171,14 @@ div#page.nc {
     color: inherit;
 }
 #twikoo .tk-submit .tk-send:not(.is-disabled) > span::before {
-    color: #fff;
+    color: var(--on-solid);
 }
 
 #twikoo .comment-meta-toggle:hover,
 #twikoo .comment-meta-toggle:focus-visible {
     background: var(--comment-accent);
-    color: #fff;
-    box-shadow: 0 3px 7px rgba(0, 0, 0, 0.14);
+    color: var(--on-solid);
+    box-shadow: var(--comment-toggle-shadow);
 }
 
 #twikoo .comment-meta-toggle:focus-visible {
@@ -2143,7 +2224,7 @@ div#page.nc {
 #twikoo .tk-submit .actions .tk-send:not(.is-disabled) {
     border: 0;
     background: var(--btn-bg);
-    color: #fff;
+    color: var(--on-solid);
 }
 
 #twikoo .tk-submit .actions .tk-send:not(.is-disabled):hover {
@@ -2153,7 +2234,7 @@ div#page.nc {
 #twikoo .tk-submit .actions .tk-send.is-disabled {
     border: 0;
     background: var(--btn-bg);
-    color: #fff;
+    color: var(--on-solid);
     opacity: 0.55;
 }
 
@@ -2608,7 +2689,7 @@ div#page.nc {
 }
 
 #article-container figure.highlight .highlight-tools > .copy-button.is-copy-error {
-    color: #e85d5d;
+    color: var(--code-error);
 }
 
 @keyframes code-copy-button-pop {
@@ -2636,11 +2717,11 @@ div#page.nc {
     left: 50%;
     z-index: 20;
     padding: 4px 7px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--code-tooltip-border);
     border-radius: 4px;
-    background: rgba(28, 28, 28, 0.96);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.24);
-    color: #d7d7d7;
+    background: var(--code-tooltip-bg);
+    box-shadow: var(--code-tooltip-shadow);
+    color: var(--code-tooltip-text);
     content: attr(data-code-tooltip);
     font-size: 12px;
     font-style: normal;
@@ -2723,7 +2804,7 @@ div#page.nc {
     justify-content: center;
     width: 100%;
     min-height: 30px;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    border-top: 1px solid var(--code-expand-border);
     background: transparent;
     cursor: pointer;
     user-select: none;
@@ -3025,9 +3106,9 @@ div#page.nc {
     padding: 14px 15px;
     overflow: hidden;
     border-radius: 5px;
-    background: var(--palette-strong);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-    color: #fff;
+    background: var(--strong-accent-bg);
+    box-shadow: var(--code-toast-shadow);
+    color: var(--on-solid);
     opacity: 0;
     pointer-events: none;
     transform: translateY(-24px) scale(0.97);
@@ -3038,7 +3119,7 @@ div#page.nc {
 }
 
 .code-copy-toast.is-error {
-    background: #e85d5d;
+    background: var(--code-error);
 }
 
 .code-copy-toast.is-visible {
@@ -3053,7 +3134,7 @@ div#page.nc {
     left: 0;
     width: 100%;
     height: 2px;
-    background: rgba(255, 255, 255, 0.95);
+    background: var(--code-toast-progress);
     transform-origin: left center;
 }
 
@@ -3136,7 +3217,7 @@ div#page.nc {
 
 .code-copy-toast__close:hover,
 .code-copy-toast__close:focus-visible {
-    background: rgba(255, 255, 255, 0.16);
+    background: var(--code-toast-close-hover);
     opacity: 1;
     outline: none;
 }

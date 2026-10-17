@@ -1,12 +1,8 @@
 /* Status history shares the announcement card's surface and typography. */
 .blog-status {
-    --status-up: #32c984;
-    --status-degraded: #936016;
-    --status-down: #b83c3c;
-    --status-unknown: #6e747b;
     margin-top: 14px;
     padding-top: 12px;
-    border-top: 1px solid rgba(128, 128, 128, 0.18);
+    border-top: 1px solid var(--status-border);
     font-size: 14px;
 }
 .blog-status__uptime,
@@ -45,7 +41,7 @@
 .blog-status__day:hover,
 .blog-status__day:focus-visible {
     translate: 0 -2px;
-    box-shadow: 0 0 0 2px var(--card-bg, #fff), 0 0 0 3px var(--status-up);
+    box-shadow: 0 0 0 2px var(--card-bg, var(--on-solid)), 0 0 0 3px var(--status-up);
 }
 .blog-status__day:focus-visible,
 .blog-status__refresh:focus-visible,
@@ -77,12 +73,6 @@
 }
 .blog-status__link { white-space: nowrap; }
 .blog-status__link i { margin-left: 3px; font-size: 10px; }
-[data-theme="dark"] .blog-status {
-    --status-up: #4ade95;
-    --status-degraded: #e0b666;
-    --status-down: #f08585;
-    --status-unknown: #a0a5ad;
-}
 
 .blog-status-tooltip {
     position: fixed;
@@ -91,11 +81,11 @@
     max-width: calc(100vw - 16px);
     box-sizing: border-box;
     padding: 10px 13px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid var(--status-tooltip-border);
     border-radius: 10px;
-    background: #202b28;
-    color: #f5faf7;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+    background: var(--status-tooltip-bg);
+    color: var(--status-tooltip-text);
+    box-shadow: var(--status-tooltip-shadow);
     pointer-events: none;
     line-height: 1.6;
     opacity: 0;
@@ -104,9 +94,9 @@
 }
 .blog-status-tooltip[data-visible="true"] { opacity: 1; transform: translateY(0); }
 .blog-status-tooltip[hidden] { display: none; }
-.blog-status-tooltip__date { color: #b8c8c0; font-size: 12px; }
+.blog-status-tooltip__date { color: var(--status-tooltip-muted); font-size: 12px; }
 .blog-status-tooltip__value { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
-.blog-status-tooltip[data-state="up"] .blog-status-tooltip__value { color: #6ee7a5; }
+.blog-status-tooltip[data-state="up"] .blog-status-tooltip__value { color: var(--status-tooltip-up); }
 .blog-status-tooltip__average {
     margin-top: 6px;
     font-size: 13px;
@@ -117,7 +107,7 @@
     display: flex;
     justify-content: space-between;
     gap: 14px;
-    color: #b8c8c0;
+    color: var(--status-tooltip-muted);
     font-size: 12px;
     font-variant-numeric: tabular-nums;
     overflow-wrap: anywhere;

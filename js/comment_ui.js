@@ -86,7 +86,7 @@ function avatarCandidates(source, mail) {
     const gravatar = url && /^(weavatar\.com|cravatar\.cn|(?:[^.]+\.)?gravatar\.(com|loli\.net))$/.test(url.hostname);
     const candidates = [];
     if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        candidates.push(`https://gravatar.loli.net/avatar/${emailAvatarHash(email)}?d=404&s=80`);
+        candidates.push(`https://weavatar.com/avatar/${emailAvatarHash(email)}?d=404&s=80`);
     } else if (!email && gravatar) {
         // Published comments may contain only a SHA-256 hash: never reinterpret it as MD5.
         url.searchParams.set('d', '404');
@@ -353,13 +353,20 @@ function improveCompose(root) {
         toggle.setAttribute('aria-label', '展开选填网址');
         toggle.title = '展开选填网址';
         toggle.innerHTML = '<i class="fas fa-chevron-down" aria-hidden="true"></i>';
+        let transitionId = 0;
         toggle.addEventListener('click', () => {
             const expanded = toggle.getAttribute('aria-expanded') !== 'true';
             toggle.setAttribute('aria-expanded', String(expanded));
             toggle.querySelector('i').className = expanded ? 'fas fa-chevron-up' : 'fas fa-chevron-down';
             toggle.setAttribute('aria-label', expanded ? '收起选填网址' : '展开选填网址');
             toggle.title = toggle.getAttribute('aria-label');
-            if (extra) animatePanel(extra, expanded);
+            if (extra) {
+                const current = ++transitionId;
+                extra.dataset.tooltipReady = 'false';
+                animatePanel(extra, expanded).then(() => {
+                    if (current === transitionId && expanded) extra.dataset.tooltipReady = 'true';
+                });
+            }
         });
         const toggleRow = document.createElement('div');
         toggleRow.className = 'comment-extra-toggle-row';

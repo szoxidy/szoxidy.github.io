@@ -7,11 +7,42 @@
     let pendingCard = null;
     let active = null;
 
+    const releaseAside = state => {
+        if (!state.aside) return;
+        state.aside.animation.cancel();
+        state.aside.node.style.cssText = state.aside.style;
+        state.aside = null;
+    };
+
+    const syncAside = state => {
+        if (!state.asideRect) return;
+        const node = document.querySelector('#aside-content');
+        if (!node || state.aside?.node === node) return;
+        releaseAside(state);
+        const rect = state.asideRect;
+        const style = node.style.cssText;
+        Object.assign(node.style, {
+            position: 'fixed', left: `${rect.left}px`, top: `${rect.top}px`,
+            width: `${rect.width}px`, maxHeight: 'none', transition: 'none',
+            alignSelf: 'auto', zIndex: '1001'
+        });
+        const animation = node.animate([
+            { transform: 'translateY(0)' },
+            { transform: `translateY(${state.targetTop - rect.top}px)` }
+        ], state.motion);
+        // The replacement sidebar joins the same clock instead of restarting.
+        animation.currentTime = state.animation.currentTime || 0;
+        if (state.animation.startTime != null) animation.startTime = state.animation.startTime;
+        animation.finished.catch(() => {});
+        state.aside = { node, style, animation };
+    };
+
     const clear = () => {
         if (active) {
             active.cancelled = true;
             active.animation?.cancel();
             active.revealAnimation?.cancel();
+            releaseAside(active);
             active.preview.remove();
             active.card?.classList.remove('article-entry-source');
             active.list?.classList.remove('article-entry-list-pending');
@@ -29,14 +60,15 @@
         state.revealing = true;
         // Pjax has already replaced the DOM and finished its own scroll handling.
         if (!location.hash) window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        releaseAside(state);
         const content = document.querySelector('#post');
         state.post = content;
         content?.classList.add('article-entry-managed');
         document.body.classList.remove('article-entry-pending');
         content?.removeAttribute('aria-busy');
         const animation = state.revealAnimation = content?.animate([
-            { opacity: 0, transform: 'translateY(14px)' },
-            { opacity: 1, transform: 'translateY(0)' }
+            { opacity: 0 },
+            { opacity: 1 }
         ], { duration: 300, easing: 'cubic-bezier(.22,1,.36,1)' });
         state.preview.animate([{ opacity: 1 }, { opacity: 0 }], {
             duration: 180, fill: 'forwards'
@@ -48,6 +80,8 @@
 
     const begin = card => {
         const rect = card.getBoundingClientRect();
+        const aside = window.innerWidth > 900 ? document.querySelector('#aside-content') : null;
+        const asideRect = aside?.getBoundingClientRect();
         const preview = document.createElement('div');
         preview.className = 'article-entry-preview';
         preview.setAttribute('role', 'status');
@@ -93,10 +127,14 @@
         const headerHeight = measure.getBoundingClientRect().height;
         measure.remove();
         const layoutPadding = parseFloat(getComputedStyle(document.querySelector('#content-inner')).paddingTop) || 40;
+        state.targetTop = headerHeight + layoutPadding;
+        state.asideRect = asideRect?.width > 0 ? asideRect : null;
+        state.motion = { duration: 500, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'forwards' };
         state.animation = preview.animate([
             { transform: 'translateY(0)' },
-            { transform: `translateY(${headerHeight + layoutPadding - rect.top}px)` }
-        ], { duration: 500, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'forwards' });
+            { transform: `translateY(${state.targetTop - rect.top}px)` }
+        ], state.motion);
+        syncAside(state);
         window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
         state.animation.finished.then(() => {
             state.moved = true;
@@ -127,11 +165,13 @@
         state.post = document.querySelector('#post');
         if (!state.post) { clear(); return; }
         state.post.setAttribute('aria-busy', 'true');
+        syncAside(state);
         state.loaded = true;
         requestAnimationFrame(() => reveal(state));
     });
     document.addEventListener('pjax:error', clear);
     window.addEventListener('popstate', clear, { capture: true });
     window.addEventListener('pagehide', clear);
+    window.addEventListener('resize', clear);
     reducedMotion.addEventListener('change', clear);
 })();
