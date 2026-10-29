@@ -1742,10 +1742,10 @@ canvas:not(#ribbon-canvas),
 }
 html {
   overflow-x: clip;
+  overflow-y: scroll;
 }
 body {
   position: relative;
-  overflow-y: scroll;
   min-height: 100%;
   background: var(--global-bg);
   color: var(--font-color);

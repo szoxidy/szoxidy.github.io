@@ -17,6 +17,7 @@ function configRequest(state) {
         state.checking = false;
         if (ok && !data?.code && data?.config && typeof data.config === 'object' && !Array.isArray(data.config)) {
             state.enabled = data.config.BLOG_MATH_CAPTCHA === 'true';
+            state.mailNotice = data.config.BLOG_MAIL_NOTICE === 'true';
             state.checked = true;
         } else {
             state.failed = true;
@@ -147,12 +148,22 @@ export function prepareComment(payload, endpoint) {
     if (form.dataset.markdown === 'false') payload.comment = plainComment(form.querySelector('textarea').value);
     const state = services.get(endpoint);
     if (!state?.checked) throw Error('评论配置尚未就绪，请稍后重试。');
+    if (state.mailNotice) {
+        const choice = form.querySelector('input[name="mailNotice"]');
+        if (!choice) throw Error('邮件提醒选项尚未就绪，请稍后重试。');
+        payload.blogMailNotice = choice.checked;
+    }
     if (state.enabled) {
         const field = form.querySelector('.blog-math-captcha');
         payload.blogCaptcha = { token: field?.dataset.token || '', answer: field?.querySelector('input')?.value || '' };
     }
 }
 globalThis.blogPrepareComment = prepareComment;
+
+export function mailNoticeSupported(root) {
+    const endpoint = root.closest('[data-service]')?.dataset.service;
+    return services.get(endpoint)?.mailNotice === true;
+}
 
 export function registerCaptchaService(root) {
     const endpoint = root.closest('[data-service]')?.dataset.service;
@@ -180,7 +191,9 @@ export function enhanceMathCaptcha(root) {
             return;
         }
         field = document.createElement('div');
-        field.className = 'tk-input tk-input-group tk-input-group--prepend blog-math-captcha';
+        // 与同一行的昵称/邮箱/网址对齐：它们都是 tk-input--small（13px），少了这个
+        // 类，验证码会按基础字号 14px 渲染，和相邻输入框差一号。
+        field.className = 'tk-input tk-input--small tk-input-group tk-input-group--prepend blog-math-captcha';
         field.innerHTML = '<button type="button" class="tk-input-group__prepend blog-captcha-question" title="换一道题" aria-label="换一道验证码题目"><i class="fas fa-key" aria-hidden="true"></i></button><input class="tk-input__inner" type="text" inputmode="numeric" autocomplete="off" placeholder="验证码" aria-label="算术验证码答案"><span class="blog-captcha-tooltip" role="tooltip">出题中…</span>';
         const question = field.querySelector('button');
         const input = field.querySelector('input');

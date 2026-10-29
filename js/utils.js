@@ -95,6 +95,10 @@
     })(),
 
     snackbarShow: (text, showAction = false, duration = 2000) => {
+      if (typeof window.siteNotify === 'function') {
+        window.siteNotify({ title: '提示', message: text, type: 'info', duration, key: 'theme-message' })
+        return
+      }
       const { position, bgLight, bgDark } = GLOBAL_CONFIG.Snackbar
       const bg = document.documentElement.getAttribute('data-theme') === 'light' ? bgLight : bgDark
       Snackbar.show({

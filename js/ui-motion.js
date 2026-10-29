@@ -82,5 +82,10 @@ function enhancePage() {
     enhanceDividers();
 }
 
+// Delegation also covers images added by PJAX, comments and the lightbox.
+document.addEventListener('dragstart', event => {
+    if (event.target.closest?.('img')) event.preventDefault();
+});
+
 document.addEventListener('pjax:complete', enhancePage);
 enhancePage();

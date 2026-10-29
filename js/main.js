@@ -506,8 +506,11 @@ document.addEventListener('DOMContentLoaded', () => {
       isShowPercent && rightsideScrollPercent(currentTop)
     })
 
-    checkDocumentHeight()
+    // Reconcile restored/PJAX positions before the reader scrolls again.
+    scrollTask()
     btf.addEventListenerPjax(window, 'scroll', scrollTask, { passive: true })
+    btf.addEventListenerPjax(window, 'pageshow', scrollTask)
+    btf.addEventListenerPjax(window, 'resize', scrollTask, { passive: true })
   }
 
   /**

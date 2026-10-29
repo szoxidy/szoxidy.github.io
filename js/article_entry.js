@@ -56,10 +56,14 @@
     };
 
     const reveal = state => {
-        if (state.cancelled || active !== state || state.revealing || !state.loaded || !state.moved) return;
+        if (state.cancelled || active !== state || state.revealing || !state.loaded) return;
         state.revealing = true;
-        // Pjax has already replaced the DOM and finished its own scroll handling.
-        if (!location.hash) window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        // Content is usable as soon as it arrives; the card movement may finish behind it.
+        if (!state.moved) {
+            state.animation.commitStyles?.();
+            state.animation.cancel();
+            state.moved = true;
+        }
         releaseAside(state);
         const content = document.querySelector('#post');
         state.post = content;
@@ -118,7 +122,7 @@
         const list = card.closest('#recent-posts');
         list?.classList.add('article-entry-list-pending');
         list?.setAttribute('aria-busy', 'true');
-        const state = { preview, card, list, moved: false, loaded: false, cancelled: false };
+        const state = { preview, card, list, moved: false, loaded: false, cancelled: false, width: window.innerWidth };
         active = state;
         // Resolve the same responsive height used by the destination header.
         const measure = document.createElement('div');
@@ -135,7 +139,7 @@
             { transform: `translateY(${state.targetTop - rect.top}px)` }
         ], state.motion);
         syncAside(state);
-        window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+        // Pjax owns scroll restoration. Do not fight a reader who starts scrolling.
         state.animation.finished.then(() => {
             state.moved = true;
             reveal(state);
@@ -172,6 +176,14 @@
     document.addEventListener('pjax:error', clear);
     window.addEventListener('popstate', clear, { capture: true });
     window.addEventListener('pagehide', clear);
-    window.addEventListener('resize', clear);
+    window.addEventListener('resize', () => {
+        if (!active) return;
+        // Scrollbar and mobile toolbar changes fire resize during the transition.
+        // Only a real viewport change invalidates the measured card position.
+        const width = window.innerWidth;
+        const crossesLayout = [768, 900].some(point => (width > point) !== (active.width > point));
+        if (crossesLayout || Math.abs(width - active.width) > 80) clear();
+        else releaseAside(active);
+    });
     reducedMotion.addEventListener('change', clear);
 })();

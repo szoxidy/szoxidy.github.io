@@ -1,6 +1,10 @@
 import { PAGE_SIZE, pageNumbers, ensurePage } from './comment-pagination.js?v=53ae2c2265';
-import { animatePanel } from './ui-motion.js?v=804ff4f87f';
-import { enhanceMathCaptcha, plainComment } from './math-captcha.js?v=312452946d';
+import { animatePanel } from './ui-motion.js?v=70b3e73716';
+import { improveDiscussion, classifyCommentMutation } from './comment-reader.js?v=0b399817d2';
+import { enhanceMathCaptcha, plainComment, mailNoticeSupported } from './math-captcha.js?v=53f8729ca3';
+import { improveCommentTooltips } from './comment-tooltips.js?v=efcd681a7b';
+// This site disables Twikoo body drafts; identity preferences remain native.
+try { localStorage.removeItem('twikoo-draft'); } catch { /* Storage may be disabled. */ }
 
 const controllers = new Map();
 const previewSignatures = new WeakMap();
@@ -9,8 +13,43 @@ const avatarResults = new Map();
 const replyHighlights = new WeakMap();
 const replyComposers = new WeakMap();
 const plainPreviews = new WeakMap();
+const adminPanels = new WeakSet();
 const markdownDraftKey = 'blog-comment-draft-markdown';
 let markdownDraftMode = true;
+const mailNoticeKey = 'blog-comment-mail-notice';
+let mailNoticePreference = true;
+
+function improveMailNotice(submit, actions, supported) {
+    const existing = actions.querySelector('.comment-mail-notice');
+    if (!supported) { existing?.remove(); return; }
+    if (existing) return;
+    const control = document.createElement('label');
+    control.className = 'comment-mail-notice';
+    control.title = '有回复时邮件通知我';
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.name = 'mailNotice';
+    try {
+        const saved = localStorage.getItem(mailNoticeKey);
+        if (saved === 'true' || saved === 'false') mailNoticePreference = saved === 'true';
+    } catch { /* Keep the current preference when browser storage is unavailable. */ }
+    checkbox.checked = mailNoticePreference;
+    checkbox.setAttribute('aria-label', '邮件提醒：有回复时邮件通知我');
+    checkbox.addEventListener('change', () => {
+        mailNoticePreference = checkbox.checked;
+        try { localStorage.setItem(mailNoticeKey, String(checkbox.checked)); }
+        catch { /* The current form still respects this choice. */ }
+        document.querySelectorAll('#twikoo input[name="mailNotice"]').forEach(input => {
+            input.checked = mailNoticePreference;
+        });
+    });
+    const caption = document.createElement('span');
+    caption.textContent = '邮件提醒';
+    control.append(checkbox, caption);
+    const markdown = actions.querySelector('.comment-markdown-toggle');
+    if (markdown) markdown.after(control);
+    else actions.prepend(control);
+}
 
 function initialAvatar(nick) {
     const name = nick.trim() || '访客';
@@ -72,6 +111,32 @@ function emailAvatarHash(email) {
         ((word >>> shift) & 0xff).toString(16).padStart(2, '0')).join('')).join('');
 }
 
+// 站内指定的评论头像：键是邮箱 MD5（Gravatar 那套公开标识，不把邮箱明文写进
+// 线上 JS），值是可直接访问的站内图片。用于外部查询注定落空的身份——Google 的
+// 个人头像不对第三方公开，Gravatar / WeAvatar 上也没有记录时，查询只会退化成
+// 首字占位图。以后在 weavatar.com 或 gravatar.com 注册了头像，删掉这一项即可
+// 恢复外部查询（映射期间不再请求外部服务）。
+const localAvatars = new Map([
+    // 博主的站内头像映射；这里仅保留公开摘要。
+    ['b1c38013f782303cff26dc625fccbdfc', '/img/site-avatar.jpg?v=f600c1b0df'],
+    ['a9c0485877817324447cd604f579e536b3dc1d7efe7acac83d60fe25ec8be3be', '/img/site-avatar.jpg?v=f600c1b0df'],
+]);
+
+// 已发布的博主评论在前端只有 mailMd5、拿不到邮箱，按 Twikoo 的 .tk-master 标记给图。
+const masterAvatar = '/img/site-avatar.jpg?v=f600c1b0df';
+
+function localAvatar(mail, source = '') {
+    if (mail) return localAvatars.get(emailAvatarHash(mail)) || '';
+    try {
+        const url = new URL(source, location.href);
+        if (!/^(weavatar\.com|cravatar\.cn|(?:[^.]+\.)?gravatar\.(com|loli\.net))$/.test(url.hostname)) return '';
+        const hash = url.pathname.match(/^\/avatar\/([a-f\d]{32}|[a-f\d]{64})\/?$/i)?.[1];
+        return localAvatars.get(hash?.toLowerCase()) || '';
+    } catch {
+        return '';
+    }
+}
+
 function avatarCandidates(source, mail) {
     let url;
     try {
@@ -97,6 +162,12 @@ function avatarCandidates(source, mail) {
         candidates.push(url.href);
     }
     if (qq) candidates.push(`https://q1.qlogo.cn/g?b=qq&nk=${qq}&s=640`);
+    const primary = candidates.find(candidate => candidate.startsWith('https://weavatar.com/avatar/'));
+    const hash = primary && new URL(primary).pathname.split('/').pop();
+    if (/^(?:[a-f\d]{32}|[a-f\d]{64})$/i.test(hash || '')) {
+        candidates.push(`https://www.gravatar.com/avatar/${hash}?d=404&s=80`);
+        // Libravatar redirects missing records back to Gravatar, repeating this lookup.
+    }
     return [...new Set(candidates)];
 }
 
@@ -116,31 +187,50 @@ function loadAvatar(url) {
     });
 }
 
-function resolveAvatar(img, nick, mail = '') {
+function resolveAvatar(img, nick, mail = '', override = '') {
     const current = img.getAttribute('src') || '';
     const previous = avatarStates.get(img);
     const source = previous && current === previous.output ? previous.source : current;
-    const key = JSON.stringify([source, nick, mail.trim().toLowerCase()]);
-    if (previous?.key === key) return;
-    const state = { key, source, output: initialAvatar(nick) };
+    const local = override || localAvatar(mail, source);
+    const key = JSON.stringify([source, nick, mail.trim().toLowerCase(), local]);
+    if (previous?.key === key && (!previous.retryAt || Date.now() < previous.retryAt)) return;
+    clearTimeout(previous?.timer);
+    const state = { key, source, output: local || initialAvatar(nick) };
     avatarStates.set(img, state);
     img.src = state.output;
-    const requestKey = JSON.stringify([source, mail.trim().toLowerCase()]);
-    if (!avatarResults.has(requestKey)) {
-        avatarResults.set(requestKey, (async () => {
-            const candidates = await avatarCandidates(source, mail);
-            for (const url of candidates) {
-                if (await loadAvatar(url)) return url;
-            }
-            return '';
-        })().catch(() => ''));
-    }
-    avatarResults.get(requestKey).then(result => {
-        const url = result || initialAvatar(nick);
+    if (local) return;
+    const candidates = avatarCandidates(source, mail);
+    if (!candidates.length) return;
+    // The hidden composer avatar and preview share the same provider requests.
+    const requestKey = JSON.stringify(candidates);
+    const request = () => {
         if (avatarStates.get(img) !== state || !img.isConnected) return;
-        state.output = url;
-        img.src = url;
-    });
+        let cached = avatarResults.get(requestKey);
+        if (!cached || Date.now() >= cached.expires) {
+            cached = { expires: Infinity };
+            cached.promise = (async () => {
+                for (const url of candidates) {
+                    if (await loadAvatar(url)) return url;
+                }
+                return '';
+            })().catch(() => '').then(result => {
+                // A temporary failure must not disable this email for the whole visit.
+                cached.expires = result ? Infinity : Date.now() + 60000;
+                return result;
+            });
+            avatarResults.set(requestKey, cached);
+        }
+        cached.promise.then(result => {
+            const url = result || initialAvatar(nick);
+            if (avatarStates.get(img) !== state || !img.isConnected) return;
+            state.retryAt = result ? 0 : cached.expires;
+            state.output = url;
+            img.src = url;
+        });
+    };
+    // Wait for typing to settle instead of querying every partial email address.
+    if (mail.trim()) state.timer = setTimeout(request, 500);
+    else request();
 }
 
 function improveMarkdownHelp(submit, actions) {
@@ -264,10 +354,8 @@ function improvePreview(submit) {
         name.target = '_blank';
         name.rel = 'noopener noreferrer nofollow ugc';
     }
-    const email = document.createElement('span');
-    email.className = 'comment-preview-email';
-    email.textContent = mail;
-    details.append(name, email);
+    // 邮箱只用于头像查询和回复提醒，不进入预览。
+    details.append(name);
     identity.replaceChildren(image, details);
 }
 
@@ -344,6 +432,7 @@ function improveCompose(root) {
             extra.append(inner);
         }
         const actions = submit.querySelector('.actions');
+        if (actions) improveMailNotice(submit, actions, mailNoticeSupported(root));
         if (!meta || !actions || submit.querySelector('.comment-meta-toggle')) return;
         improveMarkdownHelp(submit, actions);
         const toggle = document.createElement('button');
@@ -412,9 +501,32 @@ function improveReplyTargets(root) {
         if (!active.has(target)) target.classList.remove('comment-reply-highlight');
     }
     for (const target of active) {
+        const body = target.querySelector?.(':scope > .tk-main > .tk-content');
+        const avatar = target.querySelector?.(':scope > .tk-avatar');
+        if (body && avatar) {
+            const top = target.getBoundingClientRect().top;
+            const bottom = Math.max(body.getBoundingClientRect().bottom, avatar.getBoundingClientRect().bottom + 26);
+            target.style.setProperty('--reply-highlight-height', `${Math.ceil(bottom - top + 8)}px`);
+        }
         target.classList.add('comment-reply-highlight');
     }
     state.active = active;
+}
+
+function improveAdmin(root) {
+    const panel = root.querySelector('.tk-admin');
+    const close = panel?.querySelector(':scope > .tk-admin-close');
+    if (!close || adminPanels.has(panel)) return;
+    adminPanels.add(panel);
+    panel.setAttribute('role', 'dialog');
+    panel.setAttribute('aria-label', 'Twikoo 评论管理');
+    close.setAttribute('aria-label', '关闭评论管理');
+    close.type = 'button';
+    panel.addEventListener('keydown', event => {
+        if (event.key !== 'Escape') return;
+        event.stopPropagation();
+        close.click();
+    });
 }
 
 function improveAvatars(root) {
@@ -424,7 +536,7 @@ function improveAvatars(root) {
         const nick = submit?.querySelector('input[name="nick"]')?.value
             || comment?.querySelector('.tk-nick')?.textContent || '访客';
         const mail = submit?.querySelector('input[name="mail"]')?.value || '';
-        resolveAvatar(img, nick, mail);
+        resolveAvatar(img, nick, mail, comment?.classList.contains('tk-master') ? masterAvatar : '');
     });
 }
 
@@ -521,7 +633,10 @@ function attach(container) {
         nav.hidden = total <= 1;
         if (total > 1) {
             nav.append(button('上一页', page - 1, page === 1));
-            for (const n of pageNumbers(page, total)) {
+            // Cursor pagination cannot jump directly to an unloaded last page.
+            // Offer at most the next unloaded page, never a long fetch waterfall.
+            const reachable = Math.min(total, Math.ceil(state.ids.length / PAGE_SIZE) + 1);
+            for (const n of pageNumbers(page, reachable)) {
                 if (typeof n === 'number') nav.append(button(String(n), n));
                 else {
                     const gap = document.createElement('span');
@@ -581,8 +696,13 @@ function attach(container) {
 }
 
 let queued = false;
+let pendingDiscussion = true;
+let pendingCompose = true;
 function sync() {
     queued = false;
+    const discussion = pendingDiscussion;
+    const compose = pendingCompose;
+    pendingDiscussion = pendingCompose = false;
     for (const [container, controller] of controllers) {
         if (!container.isConnected) {
             controller.destroy();
@@ -591,28 +711,39 @@ function sync() {
     }
     document.querySelectorAll('#twikoo').forEach(root => {
         root.querySelectorAll('.tk-footer').forEach(footer => footer.remove());
-        improveCompose(root);
-        enhanceMathCaptcha(root);
-        improveAvatars(root);
-        improveReplyTargets(root);
+        improveAdmin(root);
+        improveCommentTooltips(root);
+        if (compose) {
+            improveCompose(root);
+            enhanceMathCaptcha(root);
+            root.querySelectorAll('.tk-submit').forEach(form => improveAvatars(form));
+        }
+        if (discussion) {
+            improveDiscussion(root);
+            improveAvatars(root);
+            improveReplyTargets(root);
+        }
         root.querySelectorAll('.tk-submit textarea').forEach(input => {
             if (!input.placeholder) input.placeholder = '写下你的想法，支持 Markdown…';
         });
-        root.querySelectorAll('.tk-submit').forEach(improvePreview);
-        root.querySelectorAll('.tk-comments-container').forEach(container => {
+        if (compose) root.querySelectorAll('.tk-submit').forEach(improvePreview);
+        if (discussion) root.querySelectorAll('.tk-comments-container').forEach(container => {
             if (!controllers.has(container)) controllers.set(container, attach(container));
             controllers.get(container).sync();
         });
     });
 }
 function schedule(records) {
-    if (Array.isArray(records) && !records.some(record => {
-        const target = record.target.nodeType === 1 ? record.target : record.target.parentElement;
-        if (target?.closest('.blog-comment-pagination, .blog-comment-page-status')) return false;
-        if (target?.closest('#twikoo')) return true;
-        return [...record.addedNodes, ...record.removedNodes].some(node => node.nodeType === 1
-            && (node.id === 'twikoo' || node.querySelector('#twikoo')));
-    })) return;
+    if (Array.isArray(records)) {
+        for (const record of records) {
+            const kind = classifyCommentMutation(record);
+            if (kind === 'all') pendingCompose = pendingDiscussion = true;
+            else if (kind === 'compose') pendingCompose = true;
+            else if (kind === 'discussion') pendingDiscussion = pendingCompose = true;
+        }
+    } else if (records?.type === 'input') pendingCompose = true;
+    else pendingCompose = pendingDiscussion = true;
+    if (!pendingCompose && !pendingDiscussion) return;
     if (!queued) {
         queued = true;
         requestAnimationFrame(sync);
@@ -627,7 +758,7 @@ observer.observe(document.body, {
     attributeFilter: ['src']
 });
 document.addEventListener('input', event => {
-    if (event.target.closest('#twikoo .tk-submit')) schedule();
+    if (event.target.closest('#twikoo .tk-submit')) schedule(event);
 });
 document.addEventListener('pjax:complete', schedule);
 document.addEventListener('blog:captcha-config', schedule);
