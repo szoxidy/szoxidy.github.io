@@ -92,6 +92,10 @@
         closeButton.innerHTML = '<i class="fa-solid fa-xmark" aria-hidden="true"></i>';
         closeButton.addEventListener('click', () => removeNotification(notification));
 
+        if (variant === 'comment') {
+            notification.dataset.variant = 'comment';
+        }
+
         const codeVariant = variant === 'code';
         if (codeVariant) {
             notification.className = `code-copy-toast ${type === 'error' ? 'is-error' : 'is-success'}`;

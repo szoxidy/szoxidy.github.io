@@ -1,8 +1,9 @@
 import { PAGE_SIZE, pageNumbers, ensurePage } from './comment-pagination.js?v=53ae2c2265';
 import { animatePanel } from './ui-motion.js?v=70b3e73716';
 import { improveDiscussion, classifyCommentMutation } from './comment-reader.js?v=0b399817d2';
-import { enhanceMathCaptcha, plainComment, mailNoticeSupported } from './math-captcha.js?v=53f8729ca3';
+import { enhanceMathCaptcha, plainComment, mailNoticeSupported } from './math-captcha.js?v=8d37f3694b';
 import { improveCommentTooltips } from './comment-tooltips.js?v=efcd681a7b';
+import { enhanceCommentSubmit } from './comment-submit.js?v=c3710a03ac';
 // This site disables Twikoo body drafts; identity preferences remain native.
 try { localStorage.removeItem('twikoo-draft'); } catch { /* Storage may be disabled. */ }
 
@@ -716,6 +717,7 @@ function sync() {
         if (compose) {
             improveCompose(root);
             enhanceMathCaptcha(root);
+            root.querySelectorAll('.tk-submit').forEach(enhanceCommentSubmit);
             root.querySelectorAll('.tk-submit').forEach(form => improveAvatars(form));
         }
         if (discussion) {

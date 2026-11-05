@@ -184,6 +184,7 @@ body #footer {
     font-size: 0.875rem;
     line-height: 1.65;
     overflow-wrap: anywhere;
+    white-space: pre-line;
 }
 
 .site-notification__close {
@@ -220,6 +221,9 @@ body #footer {
 .site-notification--error .site-notification__progress {
     background: var(--notice-error);
 }
+
+/* Comment validation shares the site's notification surface and spacing. */
+.site-notification[data-variant="comment"] .site-notification__title { font-weight: 500; }
 
 @media (prefers-reduced-motion: reduce) {
     .site-notification {
@@ -736,6 +740,7 @@ body.article-entry-pending #body-wrap.post #post {
     --active-bg: var(--selection-bg);
     --active-text: var(--selection-text);
     --toc-hover-bg: color-mix(in srgb, var(--active-bg) 42%, transparent);
+    --aside-mask-solid: #000;
     /* 字标用粉色与银杏壁纸区分，其余组件继续跟随所选方案。 */
     --brand-color: #f29bb2;
     --brand-glow-near: color-mix(in srgb, var(--brand-color) 70%, transparent);
@@ -774,6 +779,11 @@ body.article-entry-pending #body-wrap.post #post {
     --comment-admin-shadow: 0 12px 40px rgba(0, 0, 0, 0.24);
     --comment-border: var(--accent-border);
     --comment-accent: var(--accent-color);
+    --comment-send-bg: var(--palette-strong);
+    --comment-send-hover: var(--palette-hover);
+    --comment-preview-bg: color-mix(in srgb, var(--palette-primary) 22%, #fff);
+    --comment-preview-hover: color-mix(in srgb, var(--palette-primary) 30%, #fff);
+    --comment-preview-text: var(--palette-hover);
     --comment-text: color-mix(in srgb, var(--palette-ink) 35%, #504b41);
     --comment-code-bg: var(--accent-wash);
     --comment-on-accent: var(--palette-ink);
@@ -878,6 +888,9 @@ body.article-entry-pending #body-wrap.post #post {
     --panel-gradient: linear-gradient(120deg, var(--trans-dark), var(--trans-dark));
     --comment-surface: var(--panel-surface);
     --comment-input-bg: rgba(255, 255, 255, 0.065);
+    --comment-preview-bg: color-mix(in srgb, var(--palette-dark-accent) 18%, transparent);
+    --comment-preview-hover: color-mix(in srgb, var(--palette-dark-accent) 26%, transparent);
+    --comment-preview-text: var(--palette-dark-hover);
     --comment-input-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
     --comment-placeholder: #b8b8b8;
     --comment-text: color-mix(in srgb, var(--palette-selection) 15%, #e4e0d8);
@@ -1459,11 +1472,19 @@ html.with-fancybox {
         top: 20px;
         align-self: flex-start;
         max-height: calc(100vh - 40px);
+        max-height: min(calc(100dvh - 40px), var(--aside-visible-height, 100dvh));
         overflow-y: auto;
         /* 侧栏到达边界后，滚轮继续带动页面。 */
         overscroll-behavior-y: auto;
         scrollbar-width: none;
-        transition: top 0.3s ease, max-height 0.3s ease;
+        transition: top 0.3s ease;
+    }
+
+    /* 下方还有内容时柔化裁切；接近末尾时逐渐收回，最后一张卡片完整显示。 */
+    #page-header.full_page + .layout > #aside-content.aside-scroll-edges {
+        border-radius: 0 0 var(--aside-edge-corner) var(--aside-edge-corner);
+        -webkit-mask-image: linear-gradient(to bottom, var(--aside-mask-solid) calc(100% - var(--aside-edge-fade)), transparent);
+        mask-image: linear-gradient(to bottom, var(--aside-mask-solid) calc(100% - var(--aside-edge-fade)), transparent);
     }
 
     #page-header.full_page + .layout > #aside-content::-webkit-scrollbar {
@@ -1474,10 +1495,17 @@ html.with-fancybox {
         position: static;
     }
 
+    /* Entry scale and opacity follow scrolling directly, including reversal.
+       Keep the card's existing transform and surface/hover transitions. */
+    #page-header.full_page + .layout > #aside-content.aside-card-entry .card-widget {
+        transition-property: background-color, border-color, box-shadow, transform;
+    }
+
     #page-header.full_page.nav-visible:not(.fixed) + .layout > #aside-content,
     #page-header.full_page.fixed + .layout > #aside-content {
         top: 70px;
         max-height: calc(100vh - 90px);
+        max-height: min(calc(100dvh - 90px), var(--aside-visible-height, 100dvh));
     }
 }
 
@@ -2341,14 +2369,47 @@ div#page.nc {
 }
 
 #twikoo .tk-submit .actions .tk-preview {
-    color: var(--comment-accent);
+    color: var(--comment-preview-text);
     border: 0;
-    background: var(--comment-code-bg);
+    background: var(--comment-preview-bg);
+    transition: background-color 150ms ease, color 150ms ease;
 }
 
-#twikoo .tk-submit .actions .tk-send {
-    font-weight: 700;
+#twikoo .tk-submit .actions .tk-preview:hover {
+    background: var(--comment-preview-hover);
 }
+
+#twikoo .tk-submit .actions :is(.tk-send, .comment-send, .tk-preview) {
+    font-weight: 500;
+}
+
+#twikoo .tk-submit .actions .tk-send:has(+ .comment-send) {
+    display: none;
+}
+
+#twikoo .tk-submit .actions .comment-send {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-width: 96px;
+    border: 0;
+    background: var(--comment-send-bg);
+    color: var(--on-solid);
+    cursor: pointer;
+    transition: background-color 150ms ease, box-shadow 150ms ease;
+}
+
+#twikoo .tk-submit .actions .comment-send:not(:disabled):hover {
+    background: var(--comment-send-hover);
+    box-shadow: var(--comment-input-focus);
+}
+
+#twikoo .tk-submit .actions .comment-send:disabled {
+    cursor: wait;
+    opacity: 0.75;
+}
+
 
 #twikoo .tk-submit .actions .tk-send:not(.is-disabled) {
     border: 0;
@@ -2494,10 +2555,10 @@ div#page.nc {
 
 /* 文楷单字重使用轻量描边加强视觉字重，保持原字体。 */
 #twikoo :is(.tk-preview-container, .tk-content) :is(strong, b),
-#twikoo a.tk-nick-link,
-#twikoo .tk-submit .tk-send > span {
+#twikoo a.tk-nick-link {
     -webkit-text-stroke: 0.025em currentColor;
 }
+#twikoo .tk-submit :is(.tk-send, .comment-send, .tk-preview) > span { -webkit-text-stroke: .012em currentColor; }
 
 #twikoo .tk-preview-container > :not(.comment-preview-identity) {
     margin-left: 56px;
@@ -2796,6 +2857,8 @@ div#page.nc {
 #twikoo .comment-reply-target .tk-ruser { font-size: 14px; color: inherit; }
 #twikoo .tk-comment > .tk-main > .tk-row > .tk-action { flex: 0 0 0; width: 0; }
 #twikoo .tk-action .tk-action-link { font: inherit; }
+/* Keep native actions above the later-painted content, including its padding. */
+#twikoo .tk-action :is(.tk-reply, .tk-delete) { z-index: 2; }
 #twikoo .tk-action .tk-vote {
     position: absolute;
     left: calc(var(--reader-avatar) / 2);
@@ -3798,4 +3861,700 @@ div#page.nc {
         animation: none;
     }
 
+}
+
+/* Artalk keeps its native data/actions. Dimensions and states mirror
+   comment_ui.js + 16-twikoo.css, including the measured 416px idle composer. */
+#artalk-wrap.artalk,
+#artalk-wrap.atk-dark-mode {
+    --at-color-font: var(--comment-text);
+    --at-color-deep: var(--comment-text);
+    --at-color-sub: var(--comment-placeholder);
+    --at-color-grey: var(--comment-placeholder);
+    --at-color-meta: var(--comment-placeholder);
+    --at-color-border: var(--comment-border);
+    --at-color-light: var(--comment-accent);
+    --at-color-bg: var(--comment-surface);
+    --at-color-bg-transl: var(--comment-surface);
+    --at-color-bg-grey: var(--comment-input-bg);
+    --at-color-bg-grey-transl: var(--comment-input-bg);
+    --at-color-bg-light: var(--comment-code-bg);
+    --at-color-main: var(--comment-accent);
+    --at-color-red: var(--notice-error);
+    --at-color-gradient: linear-gradient(180deg, transparent, var(--comment-surface));
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    font-family: inherit;
+    font-size: 15px;
+    line-height: 2;
+    color: var(--comment-text);
+}
+#artalk-wrap :is(button, input, textarea) { font-family: inherit; }
+#artalk-wrap [hidden],
+#artalk-wrap [data-reply-page-hidden] { display: none !important; }
+#artalk-wrap > .atk-list { order: 0; }
+#artalk-wrap > .atk-main-editor { order: 1; }
+#artalk-wrap .atk-editor-travel-placeholder { display: none; }
+#artalk-wrap .atk-main-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    overflow: visible;
+    min-width: 0;
+    margin: 0;
+    padding: 28px;
+    border: 0;
+    border-radius: 14px;
+    background: var(--comment-surface);
+    font-size: 15px;
+    line-height: 30px;
+    color-scheme: light;
+    scroll-margin-top: 80px;
+}
+[data-theme="dark"] #artalk-wrap .atk-main-editor { color-scheme: dark; }
+#artalk-wrap :is(.blog-artalk-compose-title, .blog-artalk-list-title) {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 20px;
+    padding: 0;
+    color: var(--comment-text);
+    font-size: 19px;
+    font-weight: 400;
+    line-height: 38px;
+}
+#artalk-wrap .blog-artalk-compose-title { order: 0; }
+#artalk-wrap .blog-artalk-reply-summary { order: 1; }
+#artalk-wrap .atk-main-editor > .atk-textarea-wrap { order: 2; margin: 0; padding: 0; }
+#artalk-wrap .atk-main-editor > .atk-header {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    order: 3;
+    margin: 14px 0 0;
+    padding: 0;
+}
+#artalk-wrap .atk-main-editor > .atk-header[data-captcha="true"] {
+    grid-template-columns: 1fr 1.25fr .85fr;
+}
+#artalk-wrap .blog-artalk-field {
+    display: flex;
+    align-items: stretch;
+    min-width: 0;
+    width: 100%;
+    height: 46px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    background: var(--comment-input-bg);
+    box-shadow: var(--comment-input-shadow);
+    transition: background-color 180ms ease, box-shadow 150ms ease;
+}
+#artalk-wrap .blog-artalk-field:focus-within { box-shadow: var(--comment-input-focus); }
+#artalk-wrap .blog-artalk-field > i,
+#artalk-wrap .blog-artalk-captcha-reload {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 44px;
+    box-sizing: border-box;
+    width: 44px;
+    height: 46px;
+    margin: 0;
+    padding: 0 12px;
+    border: 0;
+    background: transparent;
+    color: var(--comment-text);
+    font-size: 16px;
+    line-height: normal;
+}
+#artalk-wrap .blog-artalk-field input {
+    flex: 1;
+    box-sizing: border-box;
+    min-width: 0;
+    width: 0;
+    height: 46px;
+    margin: 0;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 4px;
+    outline: 0;
+    background: transparent;
+    box-shadow: none;
+    color: var(--comment-text);
+    caret-color: var(--comment-text);
+    font-size: 14px;
+    line-height: 46px;
+}
+#artalk-wrap .blog-artalk-field input::placeholder,
+#artalk-wrap .atk-textarea::placeholder { color: var(--comment-placeholder); opacity: 1; }
+#artalk-wrap .atk-main-editor input:-webkit-autofill {
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: var(--comment-text);
+    caret-color: var(--comment-text);
+    box-shadow: none;
+}
+#artalk-wrap .atk-main-editor .atk-textarea {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    height: 144px;
+    min-height: 144px;
+    margin: 0;
+    padding: 14px 16px 30px;
+    border: 0;
+    border-radius: 10px;
+    outline: 0;
+    resize: none;
+    background: var(--comment-input-bg);
+    color: var(--comment-text);
+    box-shadow: var(--comment-input-shadow);
+    font-size: 14px;
+    line-height: 1.8;
+    transition: background-color 180ms ease, box-shadow 150ms ease;
+}
+#artalk-wrap .atk-main-editor .atk-textarea:focus { box-shadow: var(--comment-input-focus); }
+#artalk-wrap .blog-artalk-captcha-reload { cursor: pointer; }
+#artalk-wrap .blog-artalk-captcha-reload:hover { color: var(--comment-accent); }
+#artalk-wrap .blog-artalk-captcha-reload:disabled { cursor: wait; }
+#artalk-wrap .blog-artalk-extra {
+    order: 4;
+    min-height: 0;
+    overflow-clip-margin: 8px;
+}
+#artalk-wrap .blog-artalk-extra-inner { padding-top: 14px; }
+#artalk-wrap .blog-artalk-extra-toggle-row { order: 5; margin: 16px 0 0; }
+#artalk-wrap .blog-artalk-meta-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 50px;
+    height: 30px;
+    min-height: 30px;
+    margin: 0;
+    padding: 5px 16px;
+    border: 1px solid var(--comment-accent);
+    border-radius: 18px;
+    background: transparent;
+    color: var(--comment-accent);
+    font-size: 12px;
+    line-height: normal;
+    box-shadow: none;
+    cursor: pointer;
+    transition: background-color 180ms ease, color 180ms ease, box-shadow 180ms ease;
+}
+#artalk-wrap .blog-artalk-meta-toggle:is(:hover, :focus-visible) {
+    background: var(--comment-accent);
+    color: var(--on-solid);
+    box-shadow: var(--comment-toggle-shadow);
+}
+#artalk-wrap .blog-artalk-meta-toggle:focus-visible { outline: 2px solid var(--comment-accent); outline-offset: 2px; }
+#artalk-wrap .atk-main-editor > .atk-bottom {
+    order: 6;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: initial;
+    gap: 12px;
+    margin: 16px 0 0;
+    padding: 0;
+}
+#artalk-wrap .atk-bottom > .atk-item,
+#artalk-wrap .blog-artalk-choices { display: contents; }
+#artalk-wrap .blog-artalk-checkbox {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    color: var(--comment-text);
+    font: inherit;
+    white-space: nowrap;
+    cursor: pointer;
+}
+#artalk-wrap .blog-artalk-checkbox input {
+    appearance: auto;
+    flex: none;
+    width: 17px;
+    height: 17px;
+    margin: 0;
+    accent-color: var(--comment-accent);
+    cursor: pointer;
+}
+#artalk-wrap .atk-state-wrap { margin: 0; }
+#artalk-wrap .atk-state-wrap:empty { display: none; }
+#artalk-wrap .atk-state-wrap .atk-state-btn {
+    box-sizing: border-box;
+    height: 36px;
+    margin: 0;
+    padding: 9px 18px;
+    border: 1px solid var(--comment-border);
+    border-radius: 8px;
+    background: var(--comment-code-bg);
+    color: var(--comment-text);
+    font-size: 12px;
+    line-height: 16px;
+}
+#artalk-wrap .atk-state-wrap .atk-text-wrap { display: inline; max-width: none; padding: 0; }
+#artalk-wrap .atk-state-wrap .atk-cancel { display: none; }
+#artalk-wrap .atk-plug-btn-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 0 0 0 auto;
+}
+#artalk-wrap .blog-artalk-emoticon { display: inline-flex; width: 32px; min-height: 32px; }
+#artalk-wrap .blog-artalk-emoticon-popover {
+    position: absolute;
+    z-index: 1000;
+    bottom: calc(100% + 12px);
+    top: auto;
+    right: 0;
+    left: auto;
+    width: min(340px, calc(100vw - 48px));
+    max-width: calc(100vw - 48px);
+    overflow: hidden;
+    border: 0;
+    border-radius: 10px;
+    background: var(--card-bg);
+    box-shadow: var(--comment-popover-shadow);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(8px) scale(.98);
+    transform-origin: bottom right;
+    transition: opacity 180ms ease, transform 280ms cubic-bezier(.22, 1, .36, 1), visibility 0s 280ms;
+}
+#artalk-wrap .blog-artalk-emoticon-popover[data-visible="true"] { opacity: 1; visibility: visible; pointer-events: auto; transform: none; transition-delay: 0s; }
+#artalk-wrap .atk-main-editor[data-blog-artalk-panel="emoticons"] > .atk-plug-panel-wrap { display: none !important; }
+#artalk-wrap .blog-artalk-emoticon-popover .atk-editor-plug-emoticons { display: flex; flex-direction: column; width: 100%; max-width: 100%; height: auto; color: var(--comment-text); }
+#artalk-wrap .blog-artalk-emoticon-popover .atk-grp-wrap { flex: 1; min-height: 0; height: auto; max-height: min(197px, calc(var(--emoticon-room, 260px) - 32px)); overflow: auto; }
+#artalk-wrap .blog-artalk-emoticon-popover .atk-grp { padding: 10px 0 10px 10px; }
+#artalk-wrap .blog-artalk-emoticon-popover .atk-grp > .atk-item { display: inline-block; min-width: 0; margin: 0; padding: 5px 8px; border-radius: 5px; font-size: 12px; line-height: 14px; text-align: center; transition: background-color 180ms ease; }
+#artalk-wrap .blog-artalk-emoticon-popover .atk-grp[data-type="emoji"] > .atk-item { font-size: 20px; line-height: 19px; }
+#artalk-wrap .blog-artalk-emoticon-popover .atk-grp[data-type="image"] > .atk-item { box-sizing: border-box; width: 14%; height: auto; }
+#artalk-wrap .blog-artalk-emoticon-popover .atk-grp > .atk-item img { max-width: 100%; height: auto; }
+#artalk-wrap .blog-artalk-emoticon-popover .atk-grp > .atk-item:hover { background: var(--comment-code-bg); }
+#artalk-wrap .blog-artalk-emoticon-popover .atk-grp-switcher { position: static; order: -1; width: 100%; height: auto; border: 0; border-top: 1px solid var(--comment-border); background: transparent; }
+#artalk-wrap .blog-artalk-emoticon-popover .atk-grp-switcher > span { display: inline-block; float: none; margin-right: 3px; padding: 0 10px; font-size: 14px; line-height: 30px; }
+#artalk-wrap .blog-artalk-emoticon-popover .atk-grp-switcher > span:is(:hover, .active) { background: var(--comment-code-bg); }
+#artalk-wrap .blog-artalk-markdown-help,
+#artalk-wrap .atk-plug-btn-wrap .atk-plug-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    min-height: 32px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--comment-text);
+    font: inherit;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+    transition: color 180ms ease;
+}
+#artalk-wrap .blog-artalk-markdown-help::before {
+    content: '\f059';
+    font: var(--fa-font-regular);
+    display: inline-block;
+    width: 22px;
+    height: 22px;
+    line-height: 1;
+    transition: transform 180ms ease;
+}
+#artalk-wrap .atk-plug-btn-wrap .atk-plug-btn :is(i, svg) {
+    width: 22px;
+    height: 22px;
+    color: inherit;
+    transition: transform 180ms ease;
+}
+#artalk-wrap .blog-artalk-markdown-help:is(:hover, [aria-expanded="true"]),
+#artalk-wrap .atk-plug-btn-wrap .atk-plug-btn:hover { color: var(--comment-accent); background: transparent; }
+@media (hover: hover) {
+    #artalk-wrap .blog-artalk-markdown-help:hover::before,
+    #artalk-wrap .atk-plug-btn-wrap .atk-plug-btn:hover i { transform: scale(1.08); }
+}
+#artalk-wrap .blog-artalk-markdown-help:focus-visible::before { transform: scale(1.08); }
+#artalk-wrap .blog-artalk-markdown-guide {
+    order: 7;
+    margin-top: 14px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    background: var(--comment-code-bg);
+    color: var(--comment-text);
+    font-size: 13px;
+    line-height: 1.8;
+}
+#artalk-wrap :is(.atk-send-btn, .blog-artalk-preview-btn) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    gap: 7px;
+    flex: none;
+    width: auto;
+    height: 36px;
+    min-width: 0;
+    min-height: 36px;
+    margin: 0;
+    padding: 9px 18px;
+    border: 0;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 18px;
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color 150ms ease, color 150ms ease, box-shadow 150ms ease;
+}
+#artalk-wrap .atk-send-btn {
+    gap: 8px;
+    min-width: 96px;
+    font-weight: 500;
+    background: var(--comment-send-bg);
+    color: var(--on-solid);
+}
+#artalk-wrap .atk-send-btn:not(:disabled):hover {
+    background: var(--comment-send-hover);
+    color: var(--on-solid);
+    box-shadow: var(--comment-input-focus);
+}
+#artalk-wrap .atk-send-btn:disabled { opacity: .75; cursor: wait; }
+#artalk-wrap .blog-artalk-preview-btn { background: var(--comment-preview-bg); color: var(--comment-preview-text); }
+#artalk-wrap :is(.atk-send-btn, .blog-artalk-preview-btn) > i { color: inherit; }
+#artalk-wrap .blog-artalk-preview-btn:hover { background: var(--comment-preview-hover); color: var(--comment-preview-text); }
+#artalk-wrap :is(button, [role="button"], input[type="checkbox"]):focus-visible { outline: 2px solid var(--comment-accent); outline-offset: 3px; }
+#artalk-wrap .blog-artalk-reply-summary {
+    margin: 25px 0 18px;
+    padding: 20px;
+    border-width: 1.2px;
+    border-style: solid;
+    border-color: var(--comment-border);
+    border-radius: 3px;
+    background: transparent;
+    color: var(--comment-text);
+    overflow-wrap: anywhere;
+}
+#artalk-wrap .blog-artalk-compose-title:has(+ .blog-artalk-reply-summary) { margin-bottom: 0; }
+#artalk-wrap .blog-artalk-reply-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; font-weight: 400; }
+#artalk-wrap .blog-artalk-reply-summary a { color: var(--comment-accent); text-decoration: none; }
+#artalk-wrap .blog-artalk-reply-summary a:hover { color: var(--accent-hover); }
+#artalk-wrap .blog-artalk-reply-meta > .atk-reply-at { margin: 0 4px; }
+#artalk-wrap .blog-artalk-reply-summary > .blog-artalk-reply-excerpt {
+    position: relative;
+    margin: 15px 0 0;
+    padding: 20px 15px;
+    border-left-width: 2px;
+    border-left-style: solid;
+    border-left-color: var(--comment-border);
+    max-height: 250px;
+    overflow: hidden;
+    color: var(--comment-text);
+    font-size: inherit;
+    line-height: 1.8;
+}
+#artalk-wrap .blog-artalk-reply-excerpt::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 35px; background: linear-gradient(180deg, transparent, var(--comment-surface)); pointer-events: none; }
+#artalk-wrap .blog-artalk-reply-summary > .atk-state-btn {
+    display: inline-flex;
+    align-items: center;
+    margin: 20px 0 0;
+    padding: 5px 10px;
+    border: 1px solid var(--comment-accent);
+    border-radius: 3px;
+    background: transparent;
+    color: var(--comment-accent);
+    font-size: 12px;
+    line-height: 18px;
+    cursor: pointer;
+    transition: background-color 180ms ease, color 180ms ease;
+}
+#artalk-wrap .blog-artalk-reply-summary > .atk-state-btn:is(:hover, :focus-visible) { background: var(--comment-accent); color: var(--on-solid); }
+#artalk-wrap .blog-artalk-reply-summary > .atk-state-btn[aria-disabled="true"] { opacity: .5; cursor: wait; }
+#artalk-wrap .blog-artalk-reply-summary .atk-cancel { display: none; }
+#artalk-wrap .atk-main-editor > .atk-plug-panel-wrap {
+    order: 8;
+    height: auto;
+    max-height: none;
+    overflow: visible;
+    margin: 18px 0 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    animation: none;
+    transition: none;
+}
+#artalk-wrap .atk-editor-plug-preview {
+    position: relative;
+    min-width: 0;
+    min-height: 0;
+    max-height: none;
+    margin: 0;
+    padding: 18px 20px;
+    overflow: visible;
+    border: 0;
+    border-radius: 12px;
+    background: var(--comment-surface);
+    color: var(--comment-text);
+    font-size: 15px;
+    line-height: 1.85;
+    overflow-wrap: anywhere;
+}
+#artalk-wrap .atk-editor-plug-preview::before {
+    content: '评论预览 · 尚未发送';
+    display: block;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--comment-border);
+    color: var(--comment-accent);
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.6;
+}
+#artalk-wrap .blog-artalk-preview-identity { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
+#artalk-wrap .blog-artalk-preview-avatar { flex: 0 0 44px; width: 44px; height: 44px; border-radius: 50%; object-fit: cover; }
+#artalk-wrap .blog-artalk-preview-identity > div { min-width: 0; }
+#artalk-wrap .blog-artalk-preview-nick { display: block; color: var(--comment-text); font-weight: 400; }
+#artalk-wrap a.blog-artalk-preview-nick,
+#artalk-wrap .atk-header > .atk-nick a { color: var(--comment-accent); font-weight: 700; text-decoration: none; }
+#artalk-wrap a.blog-artalk-preview-nick:hover,
+#artalk-wrap .atk-header > .atk-nick a:hover { color: var(--accent-hover); }
+#artalk-wrap .blog-artalk-preview-content { margin-left: 56px; overflow-wrap: anywhere; }
+#artalk-wrap .blog-artalk-plain { white-space: pre-wrap; }
+#artalk-wrap :is(.atk-editor-plug-preview, .atk-content) :is(strong, b),
+#artalk-wrap a.blog-artalk-preview-nick,
+#artalk-wrap .atk-header > .atk-nick a { -webkit-text-stroke: .025em currentColor; }
+#artalk-wrap :is(.atk-send-btn, .blog-artalk-preview-btn) > span { -webkit-text-stroke: .012em currentColor; }
+#artalk-wrap .atk-editor-plug-preview :is(p, ul, ol) { margin: .7em 0; }
+#artalk-wrap .atk-editor-plug-preview :is(ul, ol) { padding-left: 1.6em; }
+#artalk-wrap .atk-editor-plug-preview blockquote {
+    margin: 12px 0;
+    padding: 8px 14px;
+    border-left: 3px solid var(--comment-accent);
+    border-radius: 0 6px 6px 0;
+    background: var(--comment-code-bg);
+    color: inherit;
+}
+#artalk-wrap .atk-editor-plug-preview a:not(.blog-artalk-preview-nick) { color: var(--comment-accent); text-decoration: underline; text-underline-offset: 3px; }
+#artalk-wrap .atk-editor-plug-preview code { padding: 2px 5px; border-radius: 4px; background: var(--comment-code-bg); color: inherit; font-size: .94em; }
+#artalk-wrap :is(.atk-editor-plug-preview, .atk-content) :is(pre, code) {
+    font-family: "JetBrains Mono Bold", "Cascadia Code", "Cascadia Mono", Consolas, "SFMono-Regular", "Liberation Mono", "PingFang SC", "Microsoft YaHei", monospace;
+    font-weight: 400;
+    font-style: normal;
+    font-variant-ligatures: none;
+    letter-spacing: 0;
+    -webkit-text-stroke: 0;
+}
+#artalk-wrap :is(.atk-editor-plug-preview, .atk-content) pre code { font-size: 14px; line-height: 1.75; }
+#artalk-wrap .atk-editor-plug-preview pre { max-width: 100%; margin: 14px 0; padding: 12px 14px; overflow-x: auto; border-radius: 8px; background: var(--comment-code-bg); line-height: 1.65; white-space: pre; overflow-wrap: normal; }
+#artalk-wrap .atk-editor-plug-preview pre code { padding: 0; background: transparent; }
+#artalk-wrap .atk-editor-plug-preview img { max-width: 100%; height: auto; }
+#artalk-wrap .atk-editor-plug-preview .blog-artalk-preview-avatar { width: 44px; height: 44px; }
+#artalk-wrap .atk-editor-plug-preview table { display: block; max-width: 100%; overflow-x: auto; }
+#artalk-wrap .blog-artalk-preview-content > :first-child { margin-top: 0; }
+#artalk-wrap .blog-artalk-preview-content > :last-child { margin-bottom: 0; }
+#artalk-wrap .atk-main-editor > .atk-loading { border-radius: inherit; }
+
+/* Preserve the old reading card, including its 24px/28px padding. */
+#artalk-wrap > .atk-list { min-width: 0; margin-top: 0; padding: 24px 28px; border: 0; border-radius: 14px; background: var(--comment-surface); color: var(--comment-text); scroll-margin-top: 80px; }
+#artalk-wrap .atk-list-header { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin: 0 0 12px; padding: 0; font-size: 1.25rem; font-weight: 700; line-height: 1; }
+#artalk-wrap .blog-artalk-list-title { margin: 0; }
+#artalk-wrap .atk-comment-count,
+#artalk-wrap .atk-comment-count-num { margin: 0; color: var(--comment-placeholder); font-size: 13px; }
+#artalk-wrap .atk-right-action { flex: 0 0 auto; margin-left: auto; gap: 8px; }
+#artalk-wrap .blog-artalk-list-tool { display: inline-grid; place-items: center; box-sizing: border-box; width: 30px; height: 30px; margin: 0; padding: 7px; border: 0; border-radius: 8px; background: transparent; color: var(--comment-placeholder); font-size: 16px; line-height: 1; cursor: pointer; }
+#artalk-wrap .blog-artalk-list-tool:is(:hover, [aria-expanded="true"]) { color: var(--comment-accent); background: var(--comment-code-bg); box-shadow: none; }
+#artalk-wrap .blog-artalk-search { display: flex; gap: .5rem; margin-bottom: 1rem; }
+#artalk-wrap .blog-artalk-search-field { position: relative; flex: 1; min-width: 0; }
+#artalk-wrap .blog-artalk-search input { display: block; box-sizing: border-box; width: 100%; height: 32px; padding: 0 32px 0 12px; outline: none; border: 1px solid var(--comment-border); border-radius: 4px; background: transparent; color: var(--comment-text); font-size: .875rem; line-height: 32px; }
+#artalk-wrap .blog-artalk-search input::-webkit-search-cancel-button { display: none; }
+#artalk-wrap .blog-artalk-search input:hover { border-color: var(--comment-accent); }
+#artalk-wrap .blog-artalk-search input:focus { border-color: var(--comment-accent); }
+#artalk-wrap .blog-artalk-search-clear { position: absolute; top: 0; right: 5px; width: 24px; height: 32px; padding: 0; border: 0; background: transparent; color: var(--comment-placeholder); cursor: pointer; }
+#artalk-wrap .blog-artalk-search-submit { height: 32px; padding: 9px 15px; border: 1px solid var(--comment-send-bg); border-radius: 3px; background: var(--comment-send-bg); color: var(--on-solid); font-size: 12px; line-height: 12px; cursor: pointer; }
+#artalk-wrap .blog-artalk-search-submit:hover { border-color: var(--comment-send-hover); background: var(--comment-send-hover); }
+#artalk-wrap .atk-list-comments-wrap { padding: 0; }
+#artalk-wrap .atk-comment-wrap { --reader-avatar: 44px; --reader-rail: 52px; --reader-gap: 12px; --reader-padding: 16px; position: relative; overflow: visible; margin: 0; border: 0; }
+#artalk-wrap .atk-comment {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    margin: 0;
+    padding: 16px 0;
+    min-height: 104px;
+    font-size: 16px;
+    line-height: 1.7;
+    word-break: normal;
+    overflow-wrap: anywhere;
+    scroll-margin-top: 90px;
+}
+#artalk-wrap .atk-list-comments-wrap > .atk-comment-wrap + .atk-comment-wrap::before { content: ''; position: absolute; top: 0; right: 0; left: calc(var(--reader-rail) + var(--reader-gap)); border-top: 1px solid var(--comment-divider); pointer-events: none; }
+#artalk-wrap .atk-comment::after { content: ''; position: absolute; z-index: -1; top: 0; left: -8px; right: -8px; height: var(--reply-highlight-height, 0px); border-radius: 10px; background: var(--comment-accent); opacity: 0; pointer-events: none; transition: opacity 180ms ease; }
+#artalk-wrap .blog-artalk-reply-highlight > .atk-comment::after { opacity: .12; }
+#artalk-wrap .atk-comment > .atk-avatar { display: block; flex: 0 0 var(--reader-avatar); float: none; width: var(--reader-avatar); height: var(--reader-avatar); margin: 2px calc(var(--reader-gap) + var(--reader-rail) - var(--reader-avatar)) 0 0; padding: 0; border-radius: 50%; background: var(--comment-code-bg); }
+#artalk-wrap .atk-comment > .atk-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+#artalk-wrap .atk-comment > .atk-main { position: static; flex: 1; min-width: 0; margin: 0; }
+#artalk-wrap .atk-comment > .atk-main > .atk-header { position: relative; align-items: center; overflow: visible; gap: 5px 8px; min-height: 26px; margin: 0; padding-right: 88px; font-size: 14px; line-height: 26px; }
+#artalk-wrap .atk-comment .atk-header .atk-item { margin: 0; }
+#artalk-wrap .atk-comment .atk-header > .atk-nick { color: var(--comment-text); font-size: 15px; font-weight: 600; }
+#artalk-wrap .atk-comment .atk-header .atk-date { position: absolute; top: 0; right: 0; margin: 0; color: var(--comment-placeholder); font-size: 12px; white-space: nowrap; cursor: default; }
+#artalk-wrap .atk-header .atk-badge { margin: 0; padding: 0 5px; border-radius: 4px; font-size: 11px; line-height: 20px; }
+#artalk-wrap :is(.atk-header, .blog-artalk-reply-meta) .atk-ua-wrap { display: inline-flex; align-items: center; gap: 10px; color: var(--comment-placeholder); font-size: 13px; line-height: 1.4; }
+#artalk-wrap .atk-ua-wrap .atk-ua { display: inline-flex; align-items: center; gap: 3px; margin: 0; padding: 0; border: 0; background: transparent; font-size: 13px; line-height: 1.4; }
+#artalk-wrap .atk-ua-wrap > .ua-os { order: -1; }
+#artalk-wrap .atk-ua[data-agent]:not([data-agent=""])::before { content: ''; flex: 0 0 17px; width: 17px; height: 17px; transform: translateY(1px); background-position: center; background-size: contain; background-repeat: no-repeat; }
+#artalk-wrap .atk-ua[data-agent="windows"]::before { background-image: url('/plugins/argon-ua/windows.svg'); }
+#artalk-wrap .atk-ua[data-agent="chrome"]::before { background-image: url('/plugins/argon-ua/chrome.svg'); }
+#artalk-wrap .atk-ua[data-agent="edge"]::before { background-image: url('/plugins/argon-ua/edge.svg'); }
+#artalk-wrap .atk-ua[data-agent="firefox"]::before { background-image: url('/plugins/argon-ua/firefox.svg'); }
+#artalk-wrap .atk-ua[data-agent="safari"]::before { background-image: url('/plugins/argon-ua/safari.svg'); }
+#artalk-wrap .atk-ua[data-agent="android"]::before { background-image: url('/plugins/argon-ua/android.svg'); }
+#artalk-wrap .atk-ua[data-agent="apple"]::before { flex-basis: 14px; width: 14px; background-image: url('/plugins/argon-ua/apple.svg'); }
+#artalk-wrap .atk-ua:is([data-agent="linux"], [data-agent="ubuntu"])::before { background-image: url('/plugins/argon-ua/linux.svg'); }
+#artalk-wrap .atk-comment > .atk-main > .atk-body { position: relative; z-index: 0; min-height: 32px; margin-top: 4px; padding-right: 64px; overflow: visible; }
+#artalk-wrap .atk-comment:has(> .atk-main > .atk-footer .blog-artalk-delete) > .atk-main > .atk-body { padding-right: 180px; }
+#artalk-wrap .atk-comment > .atk-main > .atk-body > .atk-content { max-height: none; overflow: visible; font-size: 16px; line-height: 1.8; word-break: normal; }
+#artalk-wrap .atk-content p { margin: 0 0 .55em; }
+#artalk-wrap .atk-content p:last-child { margin-bottom: 0; }
+#artalk-wrap :is(.atk-header, .blog-artalk-reply-meta) .atk-reply-at { display: inline-flex; align-items: center; gap: 4px; margin: 0; color: var(--comment-placeholder); font-size: 14px; }
+#artalk-wrap .atk-header .atk-reply-at > .atk-nick { margin: 0; color: inherit; font-size: 14px; }
+#artalk-wrap .atk-reply-at > .atk-arrow { display: inline-block; flex: 0 0 16px; width: 16px; height: 16px; background: currentColor; mask: url('/plugins/lucide/corner-up-left.svg') center / contain no-repeat; -webkit-mask: url('/plugins/lucide/corner-up-left.svg') center / contain no-repeat; }
+#artalk-wrap .atk-reply-at > .atk-arrow::before { content: none !important; }
+#artalk-wrap [data-blog-reply-target] { cursor: pointer; }
+#artalk-wrap .atk-comment > .atk-main > .atk-footer { margin: 0; }
+#artalk-wrap .atk-actions { position: static; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+#artalk-wrap .atk-actions > .atk-common-action-btn:not(:last-child):not(.atk-hide) { margin-right: 0; }
+#artalk-wrap .blog-artalk-vote {
+    position: absolute;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    left: calc(var(--reader-avatar) / 2);
+    top: calc(var(--reader-padding) + 6px + var(--reader-avatar));
+    transform: translateX(-50%);
+    gap: 4px;
+    box-sizing: border-box;
+    width: max-content;
+    min-width: 32px;
+    min-height: 20px;
+    margin: 0;
+    padding: 2px 8px;
+    border: 1px solid var(--comment-reply-border);
+    border-radius: 12px;
+    color: var(--comment-accent);
+    background: transparent;
+    font-family: inherit;
+    font-size: 12px;
+    line-height: 1.3;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color 160ms, color 160ms;
+}
+#artalk-wrap .blog-artalk-vote::before { content: '▴'; flex-shrink: 0; font-family: inherit; font-size: 12px; line-height: 1; }
+#artalk-wrap .blog-artalk-vote[aria-pressed="true"] { border-color: var(--comment-vote-active-bg); background: var(--comment-vote-active-bg); color: var(--comment-vote-text); }
+#artalk-wrap .blog-artalk-vote:not([aria-pressed="true"]):hover { color: var(--accent-hover); }
+#artalk-wrap .blog-artalk-reply { position: absolute; display: inline-flex; align-items: center; justify-content: center; top: calc(var(--reader-padding) + 32px); right: 0; min-height: 26px; margin: 0; padding: 0 9px; border: 1px solid var(--comment-reply-border); border-radius: 5px; color: var(--comment-accent); font-size: 12px; white-space: nowrap; opacity: 0; pointer-events: none; cursor: pointer; transition: opacity 160ms ease, background-color 160ms ease, color 160ms ease, border-color 160ms ease; }
+#artalk-wrap :is(.blog-artalk-reply, .blog-artalk-delete) { z-index: 2; top: var(--reader-action-top, calc(var(--reader-padding) + 30px)); }
+#artalk-wrap .blog-artalk-delete {
+    position: absolute;
+    right: 54px;
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    margin: 0;
+    padding: 0 8px;
+    border: 1px solid var(--comment-reply-border);
+    border-radius: 5px;
+    background: var(--comment-surface);
+    color: var(--comment-accent);
+    font: inherit;
+    font-size: 12px;
+    line-height: 22px;
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 180ms ease, background-color 180ms ease, color 180ms ease;
+}
+#artalk-wrap .atk-comment.blog-artalk-row-active > .atk-main > .atk-footer :is(.blog-artalk-reply, .blog-artalk-delete) { opacity: 1; pointer-events: auto; }
+#artalk-wrap .blog-artalk-reply:is(:hover, :focus-visible) { background: var(--comment-accent); border-color: var(--comment-accent); color: var(--on-solid); }
+#artalk-wrap .blog-artalk-delete:is(:hover, :focus-visible) { background: var(--comment-accent); color: var(--on-solid); }
+#artalk-wrap .blog-artalk-delete:disabled { opacity: .5; cursor: wait; }
+#artalk-wrap .blog-artalk-deleted { color: var(--comment-placeholder); }
+#artalk-wrap .blog-artalk-delete-confirm { position: relative; z-index: 3; margin: 12px 0; padding: 12px 16px; border: 1px solid var(--comment-border); border-radius: 8px; background: var(--comment-surface); color: var(--comment-text); }
+#artalk-wrap .blog-artalk-delete-confirm p { margin: 0 0 10px; }
+#artalk-wrap .blog-artalk-delete-confirm button { margin: 0 10px 0 0; padding: 6px 12px; border: 1px solid var(--comment-accent); border-radius: 5px; background: transparent; color: var(--comment-accent); font: inherit; font-size: 12px; cursor: pointer; }
+#artalk-wrap .blog-artalk-delete-confirm .blog-artalk-delete-submit { background: var(--comment-send-bg); color: var(--on-solid); }
+#artalk-wrap .blog-artalk-delete-confirm button:disabled { opacity: .5; cursor: wait; }
+@media (hover: none) { #artalk-wrap :is(.blog-artalk-reply, .blog-artalk-delete) { opacity: 1; pointer-events: auto; } }
+#artalk-wrap .atk-comment-children { margin: 14px 0 0 -24px; max-height: none; padding: 0; overflow: visible; border: 0; }
+#artalk-wrap .atk-comment-children:empty { display: none; }
+#artalk-wrap .atk-comment-children > .atk-comment-wrap { --reader-avatar: 32px; --reader-rail: 44px; --reader-gap: 8px; --reader-padding: 10px; margin: 0 0 0 calc(var(--reply-depth, 0) * 24px); border: 0; }
+#artalk-wrap .atk-comment-children > .atk-comment-wrap > .atk-comment { padding: 10px 0; min-height: 78px; }
+#artalk-wrap .atk-comment-children > .atk-comment-wrap:first-child { --reader-padding: 0px; }
+#artalk-wrap .atk-comment-children > .atk-comment-wrap:first-child > .atk-comment { padding-top: 0; }
+#artalk-wrap .blog-artalk-reply-pagination { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; margin: 12px 0 0 16px; color: var(--comment-placeholder); font-size: 12px; }
+#artalk-wrap .blog-artalk-reply-pagination button { min-width: 28px; min-height: 30px; padding: 2px 6px; border: 0; border-radius: 6px; background: transparent; color: var(--comment-accent); font: inherit; cursor: pointer; }
+#artalk-wrap .blog-artalk-reply-pagination button[aria-current="page"] { background: var(--comment-code-bg); }
+#artalk-wrap .blog-artalk-reply-pagination button:disabled { opacity: .4; cursor: default; }
+#artalk-wrap .atk-list-footer { margin: 0; }
+#artalk-wrap .atk-pagination-wrap { margin: 0; padding: 0; }
+#artalk-wrap .atk-pagination { display: flex; justify-content: center; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 24px; }
+#artalk-wrap .atk-pagination button,
+#artalk-wrap .blog-artalk-page-status button { display: inline-block; width: auto; height: auto; min-width: 36px; min-height: 36px; margin: 0; padding: 5px 10px; border: 0; border-radius: 8px; background: var(--comment-surface); color: var(--comment-accent); font: inherit; cursor: pointer; }
+#artalk-wrap .atk-pagination button[aria-current="page"] { background: var(--comment-accent); border-color: var(--comment-accent); color: var(--comment-on-accent); }
+#artalk-wrap .atk-pagination button:disabled { opacity: .5; cursor: default; }
+#artalk-wrap .blog-artalk-page-status { margin-top: 12px; text-align: center; color: var(--comment-text); font-size: 13px; }
+#artalk-wrap .blog-artalk-page-status button { margin-left: 8px; }
+#artalk-wrap .atk-list-no-comment { display: flex; align-items: center; justify-content: center; flex: 1; padding: 24px 0; color: var(--comment-placeholder); text-align: center; }
+
+@media (max-width: 480px) {
+    #artalk-wrap .blog-artalk-search { flex-wrap: wrap; }
+    #artalk-wrap .blog-artalk-search-field { flex-basis: 100%; }
+}
+
+@media screen and (max-width: 600px) {
+    #artalk-wrap > .atk-list,
+    #artalk-wrap .atk-main-editor { padding: 20px 16px; }
+    #artalk-wrap .atk-main-editor > .atk-header,
+    #artalk-wrap .atk-main-editor > .atk-header[data-captcha="true"] { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+    #artalk-wrap .atk-main-editor > .atk-bottom { gap: 10px; padding-right: 38px; }
+    #artalk-wrap :is(.atk-send-btn, .blog-artalk-preview-btn, .atk-state-wrap .atk-state-btn) { padding: 9px 12px; }
+    #artalk-wrap .blog-artalk-checkbox { font-size: 13px; }
+    #artalk-wrap .atk-editor-plug-preview { padding: 14px; font-size: 14px; }
+    #artalk-wrap .blog-artalk-preview-content { margin-left: 0; }
+    #artalk-wrap .atk-list-header { gap: 8px; }
+    #artalk-wrap .atk-right-action { gap: 2px; }
+    #artalk-wrap .atk-comment-wrap { --reader-avatar: 36px; --reader-gap: 10px; }
+    #artalk-wrap .atk-comment > .atk-main > .atk-header { gap: 3px 6px; line-height: 23px; padding-right: 0; }
+    #artalk-wrap .atk-comment .atk-header .atk-date { position: static; margin-left: auto; }
+    #artalk-wrap .atk-header .atk-ua-wrap { display: none; }
+    #artalk-wrap .blog-artalk-reply { top: var(--reader-action-top, calc(var(--reader-padding) + 30px)); }
+    #artalk-wrap .atk-comment > .atk-main > .atk-body,
+    #artalk-wrap .atk-comment:has(> .atk-main > .atk-footer .blog-artalk-delete) > .atk-main > .atk-body { margin-top: 38px; padding-right: 0; padding-bottom: 30px; }
+    #artalk-wrap .atk-comment > .atk-main > .atk-body > .atk-content { font-size: 15px; }
+    #artalk-wrap .atk-comment-children { margin-left: -28px; }
+    #artalk-wrap .atk-comment-children > .atk-comment-wrap { --reader-avatar: 28px; margin-left: calc(min(var(--reply-depth, 0), 2) * 10px); }
+    #artalk-wrap .atk-comment-children .atk-header > .atk-nick { font-size: 14px; }
+    #artalk-wrap .blog-artalk-emoticon-popover .atk-grp[data-type="image"] > .atk-item { width: 16%; }
+}
+@media (max-width: 460px) { #artalk-wrap .blog-artalk-emoticon-popover .atk-grp[data-type="image"] > .atk-item { width: 20%; } }
+@media (max-width: 400px) { #artalk-wrap .blog-artalk-emoticon-popover .atk-grp[data-type="image"] > .atk-item { width: 25%; } }
+@media (max-width: 330px) { #artalk-wrap .blog-artalk-emoticon-popover .atk-grp[data-type="image"] > .atk-item { width: 33%; } }
+@media (prefers-reduced-motion: reduce) {
+    #artalk-wrap :is(.blog-artalk-field, .atk-textarea, .blog-artalk-meta-toggle, .blog-artalk-vote, .blog-artalk-reply),
+    #artalk-wrap .atk-comment::after,
+    #artalk-wrap .blog-artalk-emoticon-popover { transition: none; }
+    #artalk-wrap .blog-artalk-markdown-help::before,
+    #artalk-wrap .atk-plug-btn-wrap .atk-plug-btn :is(i, svg) { transition: none; transform: none !important; }
 }

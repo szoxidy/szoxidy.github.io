@@ -107,9 +107,22 @@ if (nativeFetch) globalThis.fetch = async function(input, options) {
         try { data = JSON.parse(options.body); } catch { /* Not a Twikoo event. */ }
     }
     const finish = data?.event === 'GET_CONFIG' ? configRequest(state) : null;
+    const form = data?.event === 'COMMENT_SUBMIT' ? matchingCommentForms(data, endpoint)[0] : null;
     let response;
     try { response = await nativeFetch.call(this, input, options); }
-    catch (error) { finish?.(null, false); throw error; }
+    catch (error) {
+        finish?.(null, false);
+        form?.dispatchEvent(new CustomEvent('blog:comment-result', { detail: { message: '网络连接失败，请稍后重试。' } }));
+        throw error;
+    }
+    if (form) {
+        let result;
+        try { result = await response.clone().json(); }
+        catch { result = { message: '评论服务返回了无法读取的响应，请稍后重试。' }; }
+        form.dispatchEvent(new CustomEvent('blog:comment-result', {
+            detail: { id: response.ok && result.id, message: result.message }
+        }));
+    }
     if (finish || data?.event === 'COMMENT_GET') {
         try {
             const result = await response.clone().json();
@@ -132,9 +145,8 @@ if (nativeFetch) globalThis.fetch = async function(input, options) {
     return response;
 };
 
-export function prepareComment(payload, endpoint) {
-    registerAll();
-    const forms = Array.from(document.querySelectorAll('#twikoo .tk-submit')).filter(form => {
+function matchingCommentForms(payload, endpoint) {
+    return Array.from(document.querySelectorAll('#twikoo .tk-submit')).filter(form => {
         if (form.closest('[data-service]')?.dataset.service !== endpoint) return false;
         const target = form.closest('.tk-comment');
         let root = target;
@@ -143,6 +155,11 @@ export function prepareComment(payload, endpoint) {
             && form.querySelector('input[name="nick"]')?.value.trim() === (payload.nick || '').trim()
             && form.querySelector('input[name="mail"]')?.value.trim() === (payload.mail || '').trim();
     });
+}
+
+export function prepareComment(payload, endpoint) {
+    registerAll();
+    const forms = matchingCommentForms(payload, endpoint);
     if (forms.length !== 1) throw Error('无法确认发送表单，请重新打开评论后重试。');
     const form = forms[0];
     if (form.dataset.markdown === 'false') payload.comment = plainComment(form.querySelector('textarea').value);

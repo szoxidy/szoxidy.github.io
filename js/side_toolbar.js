@@ -30,7 +30,89 @@
         }
     };
 
+    let aside = null;
+    let asideObserver = null;
+    let asideFrame = 0;
+    let asideCards = [];
+    const asideMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const restoreAsideCards = () => {
+        for (const { card, scale, opacity } of asideCards) {
+            card.style.scale = scale;
+            card.style.opacity = opacity;
+        }
+    };
+    const updateAsideEdges = () => {
+        asideFrame = 0;
+        if (!aside?.isConnected) return;
+        const viewport = window.visualViewport;
+        const viewportTop = viewport?.offsetTop || 0;
+        const bottom = viewportTop + (viewport?.height || window.innerHeight);
+        const asideTop = aside.getBoundingClientRect().top;
+        const scrollable = ['auto', 'scroll'].includes(getComputedStyle(aside).overflowY);
+        if (scrollable) {
+            const top = Math.max(viewportTop + 20, asideTop);
+            const height = Math.floor(bottom - top - 20);
+            if (height > 0) aside.style.setProperty('--aside-visible-height', `${height}px`);
+        } else aside.style.removeProperty('--aside-visible-height');
+        const remaining = scrollable ? Math.max(0, aside.scrollHeight - aside.clientHeight - aside.scrollTop) : 0;
+        aside.style.setProperty('--aside-edge-fade', `${Math.min(48, remaining, aside.clientHeight / 2)}px`);
+        aside.style.setProperty('--aside-edge-corner', `${Math.min(20, remaining / 3, aside.clientHeight / 4)}px`);
+        aside.classList.toggle('aside-scroll-edges', remaining > 1);
+        const animateCards = scrollable && window.matchMedia('(min-width: 901px)').matches && !asideMotion.matches;
+        aside.classList.toggle('aside-card-entry', animateCards);
+        if (!animateCards) {
+            restoreAsideCards();
+            return;
+        }
+        // Match the reference's entry 0..100px without requiring view timelines.
+        // offset geometry stays unchanged by scale; reading transformed card
+        // rectangles would feed each frame's scale back into the next one.
+        const visibleBottom = Math.max(0, Math.min(aside.clientHeight, bottom - 20 - asideTop));
+        const entries = asideCards.map(saved => {
+            let top = 0;
+            let node = saved.card;
+            while (node && node !== aside) {
+                top += node.offsetTop;
+                node = node.offsetParent;
+            }
+            const progress = node === aside && saved.card.offsetHeight
+                ? Math.max(0, Math.min(1, (aside.scrollTop + visibleBottom - top) / 100)) : null;
+            return { ...saved, progress };
+        });
+        for (const { card, scale, opacity, progress } of entries) {
+            card.style.scale = progress === null ? scale : String(.8 + .2 * progress);
+            card.style.opacity = progress === null ? opacity : String(progress);
+        }
+    };
+    const queueAsideEdges = () => {
+        if (aside && !asideFrame) asideFrame = requestAnimationFrame(updateAsideEdges);
+    };
+    const initAsideEdges = () => {
+        const next = document.querySelector('#page-header.full_page + .layout > #aside-content');
+        if (next === aside) {
+            queueAsideEdges();
+            return;
+        }
+        if (asideFrame) cancelAnimationFrame(asideFrame);
+        asideFrame = 0;
+        aside?.removeEventListener('scroll', queueAsideEdges);
+        aside?.classList.remove('aside-card-entry');
+        restoreAsideCards();
+        asideCards = [];
+        asideObserver?.disconnect();
+        asideObserver = null;
+        aside = next;
+        if (!aside) return;
+        asideCards = [...aside.querySelectorAll('.card-widget')].map(card => ({ card, scale: card.style.scale, opacity: card.style.opacity }));
+        aside.addEventListener('scroll', queueAsideEdges, { passive: true });
+        asideObserver = new ResizeObserver(queueAsideEdges);
+        asideObserver.observe(aside);
+        for (const child of new Set([...aside.children, ...asideCards.map(({ card }) => card)])) asideObserver.observe(child);
+        queueAsideEdges();
+    };
+
     const init = () => {
+        initAsideEdges();
         const toolbar = document.getElementById('rightside');
         const top = document.getElementById('go-up');
         if (!toolbar || !top) return;
@@ -114,6 +196,14 @@
         }
         update(toolbar);
     };
+
+    window.addEventListener('resize', queueAsideEdges);
+    window.addEventListener('scroll', queueAsideEdges, { passive: true });
+    window.addEventListener('pageshow', queueAsideEdges);
+    window.visualViewport?.addEventListener('resize', queueAsideEdges);
+    window.visualViewport?.addEventListener('scroll', queueAsideEdges);
+    if (asideMotion.addEventListener) asideMotion.addEventListener('change', queueAsideEdges);
+    else asideMotion.addListener?.(queueAsideEdges);
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init, { once: true });
