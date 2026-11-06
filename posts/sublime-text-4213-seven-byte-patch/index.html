@@ -531,12 +531,13 @@
   } else {
     window.loadOtherComment = loadArtalk
   }
-})()</script></div><script async src="/js/origin_title.js?v=a91d7ec50b"></script><script defer src="/js/notifications.js?v=95de32f890"></script><script async id="click-show-text" texts="富强, 民主, 文明, 和谐, 自由, 平等, 公正, 法治, 爱国, 敬业, 诚信, 友善" src="/js/click_show_text.js?v=03497138fe"></script><script defer src="/js/right_menu.js?v=83edd276c7"></script><script defer src="/js/code_block_tools.js?v=3ef907d309"></script><script defer src="/js/side_toolbar.js?v=c39400c3fd"></script><script defer src="/js/status_card.js?v=89d1713a71"></script><script defer src="/js/status-tooltip.js?v=f05f1650a8"></script><script defer src="/js/history-scroll.js?v=4e6a05ba19"></script><script defer src="/js/article_entry.js?v=5640740060"></script><script async data-dynamic-subtitle data-target="#subtitle" split="-" src="/js/dynamic_color_text.js?v=5145fa518e" texts="欲寄彩笺兼尺素，山长水阔知何处？"></script><script src="https://cdn.jsdelivr.net/npm/pjax@0.2.8/pjax.min.js" defer="defer"></script><script>document.addEventListener('DOMContentLoaded', () => {
-  const pjaxSelectors = ["head > title","#config-diff","#body-wrap","#rightside-config-hide","#rightside-config-show",".js-pjax"]
+})()</script></div><script async src="/js/origin_title.js?v=a91d7ec50b"></script><script defer src="/js/notifications.js?v=95de32f890"></script><script async id="click-show-text" texts="富强, 民主, 文明, 和谐, 自由, 平等, 公正, 法治, 爱国, 敬业, 诚信, 友善" src="/js/click_show_text.js?v=03497138fe"></script><script defer src="/js/right_menu.js?v=83edd276c7"></script><script defer src="/js/code_block_tools.js?v=3ef907d309"></script><script defer src="/js/side_toolbar.js?v=c39400c3fd"></script><script defer src="/js/status_card.js?v=89d1713a71"></script><script defer src="/js/status-tooltip.js?v=f05f1650a8"></script><script defer src="/js/history-scroll.js?v=4e6a05ba19"></script><script defer src="/js/article_entry.js?v=5640740060"></script><script async data-dynamic-subtitle data-target="#subtitle" split="-" src="/js/dynamic_color_text.js?v=5145fa518e" texts="欲寄彩笺兼尺素，山长水阔知何处？"></script><script src="/plugins/pjax/pjax.min.js" defer="defer"></script><script>document.addEventListener('DOMContentLoaded', () => {
+  const pjaxSelectors = ["head > title","link[rel=\"canonical\"]","#config-diff","#body-wrap","#rightside-config-hide","#rightside-config-show",".js-pjax"]
 
   window.pjax = new Pjax({
     elements: 'a:not([target="_blank"]):not([data-fancybox])',
     selectors: pjaxSelectors,
+    // The local transport revalidates HTML without adding a timestamp to URLs.
     cacheBust: false,
     analytics: false,
     scrollRestoration: true
