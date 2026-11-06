@@ -68,6 +68,10 @@ function show(root, node) {
     bubble.dataset.visible = 'true';
 }
 
+export function refreshCommentTooltip(root) {
+    if (owner === root && active) show(root, active);
+}
+
 export function improveCommentTooltips(root) {
     if (roots.has(root)) return;
     roots.add(root);

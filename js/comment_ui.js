@@ -2,7 +2,7 @@ import { PAGE_SIZE, pageNumbers, ensurePage } from './comment-pagination.js?v=53
 import { animatePanel } from './ui-motion.js?v=70b3e73716';
 import { improveDiscussion, classifyCommentMutation } from './comment-reader.js?v=0b399817d2';
 import { enhanceMathCaptcha, plainComment, mailNoticeSupported } from './math-captcha.js?v=8d37f3694b';
-import { improveCommentTooltips } from './comment-tooltips.js?v=efcd681a7b';
+import { improveCommentTooltips } from './comment-tooltips.js?v=f4a9dba27d';
 import { enhanceCommentSubmit } from './comment-submit.js?v=c3710a03ac';
 // This site disables Twikoo body drafts; identity preferences remain native.
 try { localStorage.removeItem('twikoo-draft'); } catch { /* Storage may be disabled. */ }

@@ -1,5 +1,5 @@
 import { animatePanel } from './ui-motion.js?v=70b3e73716';
-import { improveCommentTooltips } from './comment-tooltips.js?v=efcd681a7b';
+import { improveCommentTooltips, refreshCommentTooltip } from './comment-tooltips.js?v=f4a9dba27d';
 import { pageNumbers } from './comment-pagination.js?v=53ae2c2265';
 
 // Artalk 2.10.1 integration. Keep native submission/reply/data ownership while
@@ -968,6 +968,8 @@ export function blogArtalkPlugin(ctx) {
             answer.value = '';
             answer.disabled = true;
             answer.placeholder = '验证码加载中…';
+            captchaField.dataset.commentTooltip = '验证码加载中…';
+            refreshCommentTooltip(root);
             reload.disabled = true;
             try {
                 const latest = ctx.getConf();
@@ -978,12 +980,16 @@ export function blogArtalkPlugin(ctx) {
                 if (!captcha.token || !captcha.question) throw new Error('验证码响应缺少题目，请重新加载');
                 state.captcha.token = captcha.token;
                 answer.disabled = false;
-                answer.placeholder = /\?\s*$/.test(captcha.question) ? captcha.question : `${captcha.question} = ?`;
-                answer.setAttribute('aria-label', `算术验证码：${captcha.question}`);
-                captchaField.dataset.commentTooltip = `计算 ${captcha.question}，点击钥匙换一题`;
+                const question = /\?\s*$/.test(captcha.question) ? captcha.question : `${captcha.question} = ?`;
+                answer.placeholder = '验证码';
+                answer.setAttribute('aria-label', `算术验证码：${question}`);
+                captchaField.dataset.commentTooltip = question;
+                refreshCommentTooltip(root);
             } catch (error) {
                 if (!alive || request !== state.captchaRequest) return;
                 answer.placeholder = '点击钥匙重试';
+                captchaField.dataset.commentTooltip = '点击钥匙重试';
+                refreshCommentTooltip(root);
                 notify('验证码加载失败', error.message || '验证码加载失败，请重试。', 'error');
             } finally {
                 if (alive && request === state.captchaRequest) reload.disabled = false;
