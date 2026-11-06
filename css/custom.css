@@ -4133,14 +4133,14 @@ div#page.nc {
 #artalk-wrap .blog-artalk-emoticon-popover[data-visible="true"] { opacity: 1; visibility: visible; pointer-events: auto; transform: none; transition-delay: 0s; }
 #artalk-wrap .atk-main-editor[data-blog-artalk-panel="emoticons"] > .atk-plug-panel-wrap { display: none !important; }
 #artalk-wrap .blog-artalk-emoticon-popover .atk-editor-plug-emoticons { display: flex; flex-direction: column; width: 100%; max-width: 100%; height: auto; color: var(--comment-text); }
-#artalk-wrap .blog-artalk-emoticon-popover .atk-grp-wrap { flex: 1; min-height: 0; height: auto; max-height: min(197px, calc(var(--emoticon-room, 260px) - 32px)); overflow: auto; }
+#artalk-wrap .blog-artalk-emoticon-popover .atk-grp-wrap { flex: 0 0 auto; min-height: 0; height: min(197px, calc(var(--emoticon-room, 260px) - 32px)); max-height: min(197px, calc(var(--emoticon-room, 260px) - 32px)); overflow: auto; }
 #artalk-wrap .blog-artalk-emoticon-popover .atk-grp { padding: 10px 0 10px 10px; }
 #artalk-wrap .blog-artalk-emoticon-popover .atk-grp > .atk-item { display: inline-block; min-width: 0; margin: 0; padding: 5px 8px; border-radius: 5px; font-size: 12px; line-height: 14px; text-align: center; transition: background-color 180ms ease; }
 #artalk-wrap .blog-artalk-emoticon-popover .atk-grp[data-type="emoji"] > .atk-item { font-size: 20px; line-height: 19px; }
 #artalk-wrap .blog-artalk-emoticon-popover .atk-grp[data-type="image"] > .atk-item { box-sizing: border-box; width: 14%; height: auto; }
 #artalk-wrap .blog-artalk-emoticon-popover .atk-grp > .atk-item img { max-width: 100%; height: auto; }
 #artalk-wrap .blog-artalk-emoticon-popover .atk-grp > .atk-item:hover { background: var(--comment-code-bg); }
-#artalk-wrap .blog-artalk-emoticon-popover .atk-grp-switcher { position: static; order: -1; width: 100%; height: auto; border: 0; border-top: 1px solid var(--comment-border); background: transparent; }
+#artalk-wrap .blog-artalk-emoticon-popover .atk-grp-switcher { position: static; order: 1; flex: 0 0 32px; width: 100%; height: 32px; border: 0; border-top: 1px solid var(--comment-border); background: transparent; }
 #artalk-wrap .blog-artalk-emoticon-popover .atk-grp-switcher > span { display: inline-block; float: none; margin-right: 3px; padding: 0 10px; font-size: 14px; line-height: 30px; }
 #artalk-wrap .blog-artalk-emoticon-popover .atk-grp-switcher > span:is(:hover, .active) { background: var(--comment-code-bg); }
 #artalk-wrap .blog-artalk-markdown-help,
@@ -4321,32 +4321,22 @@ div#page.nc {
     font-weight: 700;
     line-height: 1.6;
 }
-#artalk-wrap .blog-artalk-preview-identity { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
-#artalk-wrap .blog-artalk-preview-avatar { flex: 0 0 44px; width: 44px; height: 44px; border-radius: 50%; object-fit: cover; }
-#artalk-wrap .blog-artalk-preview-identity > div { min-width: 0; }
-#artalk-wrap .blog-artalk-preview-nick { display: block; color: var(--comment-text); font-weight: 400; }
-#artalk-wrap a.blog-artalk-preview-nick,
+#artalk-wrap .blog-artalk-preview-identity { --reader-avatar: 44px; --reader-rail: 52px; --reader-gap: 12px; --reader-padding: 16px; }
+#artalk-wrap .blog-artalk-preview-identity[data-reply="true"] { --reader-avatar: 32px; --reader-rail: 44px; --reader-gap: 8px; --reader-padding: 10px; padding: 10px 0; min-height: 78px; }
+#artalk-wrap .blog-artalk-preview-avatar { display: block; border-radius: 50%; object-fit: cover; }
+#artalk-wrap .blog-artalk-preview-main { min-width: 0; }
+#artalk-wrap .blog-artalk-preview-nick { color: var(--comment-text); }
+#artalk-wrap .atk-header > a.blog-artalk-preview-nick,
 #artalk-wrap .atk-header > .atk-nick a { color: var(--comment-accent); font-weight: 700; text-decoration: none; }
 #artalk-wrap a.blog-artalk-preview-nick:hover,
 #artalk-wrap .atk-header > .atk-nick a:hover { color: var(--accent-hover); }
-#artalk-wrap .blog-artalk-preview-content { margin-left: 56px; overflow-wrap: anywhere; }
+#artalk-wrap .blog-artalk-preview-content { overflow-wrap: anywhere; }
 #artalk-wrap .blog-artalk-plain { white-space: pre-wrap; }
 #artalk-wrap :is(.atk-editor-plug-preview, .atk-content) :is(strong, b),
 #artalk-wrap a.blog-artalk-preview-nick,
 #artalk-wrap .atk-header > .atk-nick a { -webkit-text-stroke: .025em currentColor; }
 #artalk-wrap :is(.atk-send-btn, .blog-artalk-preview-btn) > span { -webkit-text-stroke: .012em currentColor; }
-#artalk-wrap .atk-editor-plug-preview :is(p, ul, ol) { margin: .7em 0; }
-#artalk-wrap .atk-editor-plug-preview :is(ul, ol) { padding-left: 1.6em; }
-#artalk-wrap .atk-editor-plug-preview blockquote {
-    margin: 12px 0;
-    padding: 8px 14px;
-    border-left: 3px solid var(--comment-accent);
-    border-radius: 0 6px 6px 0;
-    background: var(--comment-code-bg);
-    color: inherit;
-}
 #artalk-wrap .atk-editor-plug-preview a:not(.blog-artalk-preview-nick) { color: var(--comment-accent); text-decoration: underline; text-underline-offset: 3px; }
-#artalk-wrap .atk-editor-plug-preview code { padding: 2px 5px; border-radius: 4px; background: var(--comment-code-bg); color: inherit; font-size: .94em; }
 #artalk-wrap :is(.atk-editor-plug-preview, .atk-content) :is(pre, code) {
     font-family: "JetBrains Mono Bold", "Cascadia Code", "Cascadia Mono", Consolas, "SFMono-Regular", "Liberation Mono", "PingFang SC", "Microsoft YaHei", monospace;
     font-weight: 400;
@@ -4356,13 +4346,8 @@ div#page.nc {
     -webkit-text-stroke: 0;
 }
 #artalk-wrap :is(.atk-editor-plug-preview, .atk-content) pre code { font-size: 14px; line-height: 1.75; }
-#artalk-wrap .atk-editor-plug-preview pre { max-width: 100%; margin: 14px 0; padding: 12px 14px; overflow-x: auto; border-radius: 8px; background: var(--comment-code-bg); line-height: 1.65; white-space: pre; overflow-wrap: normal; }
-#artalk-wrap .atk-editor-plug-preview pre code { padding: 0; background: transparent; }
 #artalk-wrap .atk-editor-plug-preview img { max-width: 100%; height: auto; }
-#artalk-wrap .atk-editor-plug-preview .blog-artalk-preview-avatar { width: 44px; height: 44px; }
 #artalk-wrap .atk-editor-plug-preview table { display: block; max-width: 100%; overflow-x: auto; }
-#artalk-wrap .blog-artalk-preview-content > :first-child { margin-top: 0; }
-#artalk-wrap .blog-artalk-preview-content > :last-child { margin-bottom: 0; }
 #artalk-wrap .atk-main-editor > .atk-loading { border-radius: inherit; }
 
 /* Preserve the old reading card, including its 24px/28px padding. */
@@ -4399,7 +4384,7 @@ div#page.nc {
     scroll-margin-top: 90px;
 }
 #artalk-wrap .atk-list-comments-wrap > .atk-comment-wrap + .atk-comment-wrap::before { content: ''; position: absolute; top: 0; right: 0; left: calc(var(--reader-rail) + var(--reader-gap)); border-top: 1px solid var(--comment-divider); pointer-events: none; }
-#artalk-wrap .atk-comment::after { content: ''; position: absolute; z-index: -1; top: 0; left: -8px; right: -8px; height: var(--reply-highlight-height, 0px); border-radius: 10px; background: var(--comment-accent); opacity: 0; pointer-events: none; transition: opacity 180ms ease; }
+#artalk-wrap .atk-comment::after { content: ''; position: absolute; z-index: -1; top: 0; left: -8px; right: -8px; height: var(--reply-highlight-height, 0px); border-radius: 10px; background: var(--comment-accent); opacity: 0; pointer-events: none; transition: opacity 220ms ease; }
 #artalk-wrap .blog-artalk-reply-highlight > .atk-comment::after { opacity: .12; }
 #artalk-wrap .atk-comment > .atk-avatar { display: block; flex: 0 0 var(--reader-avatar); float: none; width: var(--reader-avatar); height: var(--reader-avatar); margin: 2px calc(var(--reader-gap) + var(--reader-rail) - var(--reader-avatar)) 0 0; padding: 0; border-radius: 50%; background: var(--comment-code-bg); }
 #artalk-wrap .atk-comment > .atk-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
@@ -4426,11 +4411,12 @@ div#page.nc {
 #artalk-wrap .atk-comment > .atk-main > .atk-body > .atk-content { max-height: none; overflow: visible; font-size: 16px; line-height: 1.8; word-break: normal; }
 #artalk-wrap .atk-content p { margin: 0 0 .55em; }
 #artalk-wrap .atk-content p:last-child { margin-bottom: 0; }
-#artalk-wrap :is(.atk-header, .blog-artalk-reply-meta) .atk-reply-at { display: inline-flex; align-items: center; gap: 4px; margin: 0; color: var(--comment-placeholder); font-size: 14px; }
-#artalk-wrap .atk-header .atk-reply-at > .atk-nick { margin: 0; color: inherit; font-size: 14px; }
-#artalk-wrap .atk-reply-at > .atk-arrow { display: inline-block; flex: 0 0 16px; width: 16px; height: 16px; background: currentColor; mask: url('/plugins/lucide/corner-up-left.svg') center / contain no-repeat; -webkit-mask: url('/plugins/lucide/corner-up-left.svg') center / contain no-repeat; }
+#artalk-wrap :is(.atk-header, .blog-artalk-reply-meta) .atk-reply-at { display: inline-flex; align-items: center; gap: 4px; margin: 0; color: var(--comment-placeholder); font-size: 15px; line-height: inherit; transition: color 180ms ease; }
+#artalk-wrap .atk-header .atk-reply-at > .atk-nick { margin: 0; color: inherit; font-size: inherit; }
+#artalk-wrap .atk-reply-at > .atk-arrow { display: inline-block; flex: 0 0 15px; width: 15px; height: 15px; background: currentColor; mask: url('/plugins/fontawesome/svgs/reply.svg') center / contain no-repeat; -webkit-mask: url('/plugins/fontawesome/svgs/reply.svg') center / contain no-repeat; }
 #artalk-wrap .atk-reply-at > .atk-arrow::before { content: none !important; }
 #artalk-wrap [data-blog-reply-target] { cursor: pointer; }
+#artalk-wrap .atk-reply-at:is(:hover, :focus-within) { color: var(--comment-accent); }
 #artalk-wrap .atk-comment > .atk-main > .atk-footer { margin: 0; }
 #artalk-wrap .atk-actions { position: static; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 #artalk-wrap .atk-actions > .atk-common-action-btn:not(:last-child):not(.atk-hide) { margin-right: 0; }
@@ -4497,7 +4483,7 @@ div#page.nc {
 #artalk-wrap .blog-artalk-delete-confirm .blog-artalk-delete-submit { background: var(--comment-send-bg); color: var(--on-solid); }
 #artalk-wrap .blog-artalk-delete-confirm button:disabled { opacity: .5; cursor: wait; }
 @media (hover: none) { #artalk-wrap :is(.blog-artalk-reply, .blog-artalk-delete) { opacity: 1; pointer-events: auto; } }
-#artalk-wrap .atk-comment-children { margin: 14px 0 0 -24px; max-height: none; padding: 0; overflow: visible; border: 0; }
+#artalk-wrap .atk-comment-children { margin: 32px 0 0 -24px; max-height: none; padding: 0; overflow: visible; border: 0; }
 #artalk-wrap .atk-comment-children:empty { display: none; }
 #artalk-wrap .atk-comment-children > .atk-comment-wrap { --reader-avatar: 32px; --reader-rail: 44px; --reader-gap: 8px; --reader-padding: 10px; margin: 0 0 0 calc(var(--reply-depth, 0) * 24px); border: 0; }
 #artalk-wrap .atk-comment-children > .atk-comment-wrap > .atk-comment { padding: 10px 0; min-height: 78px; }
@@ -4532,7 +4518,8 @@ div#page.nc {
     #artalk-wrap :is(.atk-send-btn, .blog-artalk-preview-btn, .atk-state-wrap .atk-state-btn) { padding: 9px 12px; }
     #artalk-wrap .blog-artalk-checkbox { font-size: 13px; }
     #artalk-wrap .atk-editor-plug-preview { padding: 14px; font-size: 14px; }
-    #artalk-wrap .blog-artalk-preview-content { margin-left: 0; }
+    #artalk-wrap .blog-artalk-preview-identity { --reader-avatar: 36px; --reader-gap: 10px; }
+    #artalk-wrap .blog-artalk-preview-identity[data-reply="true"] { --reader-avatar: 28px; }
     #artalk-wrap .atk-list-header { gap: 8px; }
     #artalk-wrap .atk-right-action { gap: 2px; }
     #artalk-wrap .atk-comment-wrap { --reader-avatar: 36px; --reader-gap: 10px; }

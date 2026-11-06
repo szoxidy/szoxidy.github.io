@@ -121,6 +121,27 @@ export function validateArtalkForm(editor, captcha, needsCaptcha = true) {
     return errors;
 }
 
+export async function completeArtalkUserAgent(ua = navigator.userAgent, hints = navigator.userAgentData) {
+    if (typeof hints?.getHighEntropyValues !== 'function') return ua;
+    try {
+        const { platformVersion, fullVersionList = [] } = await hints.getHighEntropyValues(['platformVersion', 'fullVersionList']);
+        const versionFor = brands => fullVersionList.find(item => brands.includes(item.brand)
+            && /^\d+\.\d+\.\d+\.\d+$/.test(item.version))?.version;
+        for (const [token, version] of [
+            ['Chrome', versionFor(['Google Chrome']) || versionFor(['Chromium'])],
+            ['Edg', versionFor(['Microsoft Edge'])], ['OPR', versionFor(['Opera'])]
+        ]) {
+            if (version) ua = ua.replace(new RegExp(`${token}/[\\d.]+`), `${token}/${version}`);
+        }
+        const major = parseInt(String(platformVersion).split('.')[0], 10);
+        if (hints.platform === 'Windows' && major >= 13) ua = ua.replace(/Windows NT 10\.0/i, 'Windows NT 11.0');
+        else if (hints.platform === 'macOS' && /^\d+(?:\.\d+)*$/.test(platformVersion) && major >= 11) {
+            ua = ua.replace(/Mac OS X \d+_\d+(?:_\d+)?/i, `Mac OS X ${platformVersion.replaceAll('.', '_')}`);
+        }
+    } catch { /* Browsers without these details retain their actual available UA. */ }
+    return ua;
+}
+
 // EditorPluginManager.getOptions().getApi is the public API provider consumed
 // by the native Submit and StateReply plugs. Return an adapter for that editor
 // only: never patch the library, the global API, XMLHttpRequest or fetch.
@@ -140,7 +161,11 @@ export function bridgeArtalkEditorApi(manager, getFields, onFailure, signal) {
             return response;
         };
         api.comments.createComment = async (data, params) => {
-            try { return await request(() => native.comments.createComment({ ...data, ...getFields(data) }, { ...params, signal })); }
+            try { return await request(async () => {
+                const fields = await getFields(data);
+                signal?.throwIfAborted();
+                return native.comments.createComment({ ...data, ...fields }, { ...params, signal });
+            }); }
             catch (error) { if (!signal?.aborted) onFailure(error); throw error; }
         };
         api.comments.updateComment = async (id, data, params) => {
@@ -374,7 +399,15 @@ function decorateArtalkComment(comment, signal) {
             : /ubuntu/i.test(value) ? 'ubuntu' : /linux/i.test(value) ? 'linux'
             : /mac|ios|iphone|ipad/i.test(value) ? 'apple' : '';
         badge.dataset.agent = brand;
-        badge.title = value.replace(/\b(Chrome|Chromium|Edge|Opera)\s+(\d+)(?:\.0){1,3}$/i, '$1 $2');
+        const browserToken = badge.classList.contains('ua-browser') && {
+            chrome: /(?:Chrome|CriOS)\/([\d.]+)/, edge: /(?:Edg(?:A|iOS)?|Edge)\/([\d.]+)/,
+            firefox: /(?:Firefox|FxiOS)\/([\d.]+)/, safari: /Version\/([\d.]+)/
+        }[brand];
+        const version = browserToken && (data.ua || '').match(browserToken)?.[1];
+        const description = version && /^\d+(?:\.\d+)*$/.test(version)
+            ? `${value.replace(/\s+\d[\d._]*(?:\s.*)?$/, '')} ${version}` : value;
+        badge.title = description.replace(/\b(Chrome|Chromium|Edge|Opera)\s+(\d+)(?:\.0){1,3}$/i, '$1 $2');
+        badge.dataset.commentTooltip = badge.title;
         if (brand) badge.textContent = value.replace(/\s+\d[\d._]*(?:\s.*)?$/, '').trim();
     }
 }
@@ -382,6 +415,7 @@ function decorateArtalkComment(comment, signal) {
 // Reuse the native data manager and paginator element. Only its controls change
 // to the old numbered buttons; every page still comes from the server offset.
 function installArtalkPagination(ctx, listen, signal) {
+    const defaultFlatMode = ctx.getConf().flatMode;
     const list = ctx.inject('list').getEl();
     const header = list.querySelector('.atk-list-header');
     const title = element('h2', 'blog-artalk-list-title');
@@ -392,7 +426,7 @@ function installArtalkPagination(ctx, listen, signal) {
     const searchToggle = button('blog-artalk-list-tool', '', 'magnifying-glass');
     searchToggle.setAttribute('aria-label', '搜索评论');
     searchToggle.setAttribute('aria-expanded', 'false');
-    searchToggle.title = '搜索评论';
+    searchToggle.title = '搜索本页评论正文或完整昵称（含回复）';
     const refresh = button('blog-artalk-list-tool', '', 'sync');
     refresh.setAttribute('aria-label', '刷新评论');
     refresh.title = '刷新评论';
@@ -442,7 +476,7 @@ function installArtalkPagination(ctx, listen, signal) {
         if (!preserveEditor) ctx.inject('editor').resetState();
         const conf = ctx.getConf();
         const data = ctx.getData();
-        const params = { offset: (target - 1) * conf.pagination.pageSize, limit: conf.pagination.pageSize, flatMode: conf.flatMode };
+        const params = { offset: (target - 1) * conf.pagination.pageSize, limit: conf.pagination.pageSize, flatMode: search ? true : defaultFlatMode };
         const request = { limit: params.limit, offset: params.offset, flat_mode: params.flatMode,
             page_key: conf.pageKey, site_name: conf.site, ...ctx.getApi().getUserFields() };
         conf.listFetchParamsModifier?.(request);
@@ -458,6 +492,7 @@ function installArtalkPagination(ctx, listen, signal) {
             const response = await ctx.getApi().comments.getComments(request, { signal });
             if (signal.aborted) return;
             if (!response.data.page) throw new Error('评论响应缺少页面信息，请重试。');
+            ctx.updateConf({ flatMode: params.flatMode });
             data.setListLastFetch({ params, data: response.data });
             data.clearComments();
             data.loadComments(response.data.comments);
@@ -831,6 +866,7 @@ export function blogArtalkPlugin(ctx) {
             link.tabIndex = 0;
             link.setAttribute('role', 'button');
             link.dataset.blogReplyTarget = String(data.rid);
+            if (render.$replyAt) render.$replyAt.dataset.blogReplyTarget = String(data.rid);
         }
     });
     listen(ctx, 'list-loaded', () => { root.dataset.commentState = 'ready'; });
@@ -1104,23 +1140,30 @@ export function blogArtalkPlugin(ctx) {
             if (!previewOpen || !preview) return;
             const nick = ui.$name.value.trim() || '未填写昵称';
             const email = ui.$email.value.trim();
-            const identity = element('div', 'blog-artalk-preview-identity');
+            const identity = element('div', 'blog-artalk-preview-identity atk-comment');
+            identity.dataset.reply = String(editor.getState() === 'reply');
+            const avatar = element('div', 'atk-avatar');
             const image = element('img', 'blog-artalk-preview-avatar');
             image.alt = `${nick}的头像`;
-            const details = element('div');
+            const details = element('div', 'atk-main blog-artalk-preview-main');
+            const header = element('div', 'atk-header');
             const href = websiteUrl(ui.$link.value);
-            const name = element(href ? 'a' : 'span', 'blog-artalk-preview-nick', nick);
+            const name = element(href ? 'a' : 'span', 'atk-nick blog-artalk-preview-nick', nick);
             if (href) {
                 name.href = href;
                 name.target = '_blank';
                 name.rel = 'noopener noreferrer nofollow ugc';
             }
-            details.append(name);
-            identity.append(image, details);
-            const content = element('div', 'blog-artalk-preview-content');
+            header.append(name);
+            const body = element('div', 'atk-body');
+            const content = element('div', 'atk-content blog-artalk-preview-content');
             if (markdown.input.checked) content.innerHTML = editor.getContentMarked();
             else { content.classList.add('blog-artalk-plain'); content.textContent = editor.getContentRaw(); }
-            preview.$panel.replaceChildren(identity, content);
+            body.append(content);
+            details.append(header, body);
+            avatar.append(image);
+            identity.append(avatar, details);
+            preview.$panel.replaceChildren(identity);
             clearTimeout(avatarTimer);
             avatarTimer = previewAvatar(image, nick, email);
         }
@@ -1194,6 +1237,7 @@ export function blogArtalkPlugin(ctx) {
                 if (method !== 'setReplyComment') {
                     summary.remove();
                     if (wasReplying && method === 'resetState' && !state.resetting) ui.$textarea.focus({ preventScroll: true });
+                    updatePreview();
                     return result;
                 }
                 const data = args[0];
@@ -1234,6 +1278,7 @@ export function blogArtalkPlugin(ctx) {
                 }
                 ui.$el.scrollIntoView(scrollOptions());
                 ui.$textarea.focus({ preventScroll: true });
+                updatePreview();
                 return result;
             };
             editor[method] = wrapped;
@@ -1281,7 +1326,7 @@ export function blogArtalkPlugin(ctx) {
             if (editor.hideLoading === hideLoading) editor.hideLoading = nativeHideLoading;
         });
 
-        cleanups.push(bridgeArtalkEditorApi(manager, () => state.submission || {}, error => {
+        cleanups.push(bridgeArtalkEditorApi(manager, async data => ({ ...state.submission || {}, ua: await completeArtalkUserAgent(data.ua) }), error => {
             if (!alive) return;
             state.failure = error;
             renderSend('error');
@@ -1370,8 +1415,10 @@ export function blogArtalkPlugin(ctx) {
                 const row = target.querySelector(':scope > .atk-comment');
                 const body = row.querySelector(':scope > .atk-main > .atk-body');
                 const avatar = row.querySelector(':scope > .atk-avatar');
-                const bottom = Math.max(body.getBoundingClientRect().bottom, avatar.getBoundingClientRect().bottom + 26);
-                row.style.setProperty('--reply-highlight-height', `${Math.ceil(bottom - row.getBoundingClientRect().top + 8)}px`);
+                const vote = row.querySelector(':scope > .atk-main > .atk-footer .blog-artalk-vote');
+                const bottom = Math.max(body.getBoundingClientRect().bottom, avatar.getBoundingClientRect().bottom,
+                    vote?.getBoundingClientRect().bottom || 0);
+                row.style.setProperty('--reply-highlight-height', `${Math.ceil(bottom - row.getBoundingClientRect().top + 12)}px`);
                 targets.add(target);
             }
             for (const target of highlights) {
