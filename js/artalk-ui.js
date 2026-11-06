@@ -1,5 +1,5 @@
 import { animatePanel } from './ui-motion.js?v=70b3e73716';
-import { improveCommentTooltips, refreshCommentTooltip } from './comment-tooltips.js?v=f4a9dba27d';
+import { improveCommentTooltips, refreshCommentTooltip } from './comment-tooltips.js?v=a0189d5080';
 import { pageNumbers } from './comment-pagination.js?v=53ae2c2265';
 
 // Artalk 2.10.1 integration. Keep native submission/reply/data ownership while

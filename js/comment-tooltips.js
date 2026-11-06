@@ -78,6 +78,7 @@ export function improveCommentTooltips(root) {
     root.addEventListener('mouseover', event => show(root, event.target));
     root.addEventListener('mouseout', event => {
         if (owner !== root || active?.contains(event.relatedTarget)) return;
+        if (active?.contains(event.target) && active.contains(document.activeElement)) return;
         hide();
     });
     root.addEventListener('focusin', event => show(root, event.target));
