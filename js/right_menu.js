@@ -22,7 +22,8 @@
 
     const state = {
         bound: false,
-        mouseMode: readStorage('mouse', 'on')
+        mouseMode: readStorage('mouse', 'on'),
+        copySelection: null
     };
 
     writeStorage('mouse', state.mouseMode);
@@ -60,16 +61,15 @@
         alert(text);
     };
 
-    const copyText = async (text) => {
+    const copyText = async (text, article = false) => {
+        const notify = () => {
+            if (article && window.copyNotify) window.copyNotify();
+            else showMessage('复制成功');
+        };
         if (navigator.clipboard && window.isSecureContext) {
             try {
                 await navigator.clipboard.writeText(text);
-
-                if (window.copyNotify) {
-                    window.copyNotify();
-                } else {
-                    showMessage('复制成功');
-                }
+                notify();
                 return true;
             } catch (error) {
                 // Fall through to the textarea-based compatibility path.
@@ -83,15 +83,18 @@
         txa.style.opacity = '0';
         document.body.appendChild(txa);
         txa.select();
-        const copied = document.execCommand('copy');
-        txa.remove();
+        const silenceCopyNotice = event => event.stopImmediatePropagation();
+        document.addEventListener('copy', silenceCopyNotice, true);
+        let copied = false;
+        try {
+            copied = document.execCommand('copy');
+        } finally {
+            document.removeEventListener('copy', silenceCopyNotice, true);
+            txa.remove();
+        }
 
         if (copied) {
-            if (window.copyNotify) {
-                window.copyNotify();
-            } else {
-                showMessage('复制成功');
-            }
+            notify();
             return true;
         }
 
@@ -350,7 +353,7 @@
 
     rmf.copyWordsLink = () => {
         const canonical = document.querySelector('link[rel="canonical"]');
-        copyText(canonical ? canonical.href : normalizePostUrl(window.location.href));
+        return copyText(canonical ? canonical.href : normalizePostUrl(window.location.href), Boolean(document.getElementById('post')));
     };
 
     rmf.switchReadMode = () => {
@@ -393,11 +396,13 @@
     };
 
     rmf.copySelect = () => {
-        const text = window.getSelection().toString();
+        const { text, article } = state.copySelection || {
+            text: window.getSelection().toString(),
+            article: window.copyNotify?.isArticleSelection?.() === true
+        };
 
         if (text) {
-            copyText(text);
-            return;
+            return copyText(text, article);
         }
 
         showMessage('请先选中要复制的文字');
@@ -482,7 +487,8 @@
         };
 
         rmf.copyLink = () => {
-            copyText(link.href);
+            const url = new URL(link.href, location.origin);
+            return copyText(link.href, url.origin === location.origin && postPathPattern.test(url.pathname));
         };
     };
 
@@ -492,7 +498,7 @@
         };
 
         rmf.copyLink = () => {
-            copyText(image.currentSrc || image.src);
+            return copyText(image.currentSrc || image.src);
         };
 
         rmf.saveAs = async () => {
@@ -572,11 +578,16 @@
 
         hideDynamicGroups();
 
-        const selection = window.getSelection().toString().trim();
+        const input = target.closest('textarea,input');
+        state.copySelection = {
+            text: input && typeof input.selectionStart === 'number'
+                ? input.value.slice(input.selectionStart, input.selectionEnd) : window.getSelection().toString(),
+            article: window.copyNotify?.isArticleSelection?.(target) === true
+        };
+        const selection = state.copySelection.text.trim();
         const selectedTextIsUrl = /^(?:https?:\/\/)?[\w.-]+(?:\.[\w.-]+)+[\w\-._~:/?#[\]@!$&'()*+,;=.]+$/i.test(selection);
         const link = target.closest('a');
         const image = target.closest('img');
-        const input = target.closest('textarea,input');
 
         setGroupVisible('menu-text', Boolean(selection));
         setGroupVisible('menu-too', Boolean(selectedTextIsUrl && !link));

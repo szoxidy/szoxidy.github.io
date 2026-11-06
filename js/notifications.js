@@ -185,7 +185,25 @@
         });
     };
 
-    document.addEventListener('copy', window.copyNotify);
+    const editableSelector = 'input, textarea, select, [contenteditable]:not([contenteditable="false"])';
+    const asElement = node => node?.nodeType === 1 ? node : node?.parentElement;
+    const isArticleSelection = target => {
+        if (asElement(target)?.closest(editableSelector) || document.activeElement?.closest(editableSelector)) return false;
+        const selection = window.getSelection();
+        if (!selection?.rangeCount || selection.isCollapsed || !selection.toString().trim()) return false;
+        for (let index = 0; index < selection.rangeCount; index++) {
+            const range = selection.getRangeAt(index);
+            const region = asElement(range.commonAncestorContainer)?.closest(
+                '#post #article-container, #post .post-title, #post .post-copyright__type .post-copyright-info a'
+            );
+            if (!region || [...region.querySelectorAll(editableSelector)].some(editor => range.intersectsNode(editor))) return false;
+        }
+        return true;
+    };
+    window.copyNotify.isArticleSelection = isArticleSelection;
+    document.addEventListener('copy', event => {
+        if (isArticleSelection(event.target)) window.copyNotify();
+    });
 
     const showBadgeInfo = event => {
         const badge = event.target.closest?.('#footer .github-badge[data-title]');

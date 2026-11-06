@@ -4357,8 +4357,15 @@ div#page.nc {
 #artalk-wrap .atk-comment-count,
 #artalk-wrap .atk-comment-count-num { margin: 0; color: var(--comment-placeholder); font-size: 13px; }
 #artalk-wrap .atk-right-action { flex: 0 0 auto; margin-left: auto; gap: 8px; }
-#artalk-wrap .blog-artalk-list-tool { display: inline-grid; place-items: center; box-sizing: border-box; width: 30px; height: 30px; margin: 0; padding: 7px; border: 0; border-radius: 8px; background: transparent; color: var(--comment-placeholder); font-size: 16px; line-height: 1; cursor: pointer; }
+#artalk-wrap .blog-artalk-list-tool { display: inline-grid; place-items: center; box-sizing: border-box; width: 30px; height: 30px; margin: 0; padding: 7px; border: 0; border-radius: 8px; background: transparent; color: var(--comment-placeholder); font-size: 16px; line-height: 1; cursor: pointer; transition: opacity 180ms ease, color 180ms ease, background-color 180ms ease; }
 #artalk-wrap .blog-artalk-list-tool:is(:hover, [aria-expanded="true"]) { color: var(--comment-accent); background: var(--comment-code-bg); box-shadow: none; }
+@media (min-width: 901px) and (hover: hover) and (pointer: fine) {
+    #artalk-wrap .blog-artalk-list-tool { opacity: 0; pointer-events: none; }
+    #artalk-wrap .atk-list:is(:hover, :focus-within) .blog-artalk-list-tool { opacity: 1; pointer-events: auto; }
+}
+@media (any-pointer: coarse) {
+    #artalk-wrap .blog-artalk-list-tool { opacity: 1; pointer-events: auto; }
+}
 #artalk-wrap .blog-artalk-search { display: flex; gap: .5rem; margin-bottom: 1rem; }
 #artalk-wrap .blog-artalk-search-field { position: relative; flex: 1; min-width: 0; }
 #artalk-wrap .blog-artalk-search input { display: block; box-sizing: border-box; width: 100%; height: 32px; padding: 0 32px 0 12px; outline: none; border: 1px solid var(--comment-border); border-radius: 4px; background: transparent; color: var(--comment-text); font-size: .875rem; line-height: 32px; }
