@@ -6,6 +6,8 @@ import { pageNumbers } from './comment-pagination.js?v=53ae2c2265';
 // restoring the pre-migration fields, reader layout and interaction states.
 const installed = new WeakSet();
 const avatarSources = new WeakMap();
+const avatarResults = new Map();
+const previewAvatars = new WeakMap();
 const voteStates = new WeakMap();
 const ownerHashes = new Set([
     'b1c38013f782303cff26dc625fccbdfc',
@@ -285,30 +287,91 @@ function emailAvatarHash(email) {
 
 export function enhanceArtalkAvatar(img, data = {}) {
     if (!img) return;
-    const source = img.getAttribute('src') || '';
-    const signature = JSON.stringify([data.email_encrypted, data.email, data.nick, source]);
-    if (avatarSources.get(img) === signature) return;
+    const previous = avatarSources.get(img);
+    const current = img.getAttribute('src') || '';
+    const source = previous && current === previous.output ? previous.source : current;
+    const candidates = avatarCandidates(source, data).filter(url => !url.startsWith('data:'));
+    const key = JSON.stringify(candidates);
     img.alt = `${data.nick || '访客'}的头像`;
     img.referrerPolicy = 'no-referrer';
-    const candidates = avatarCandidates(source, data);
-    let index = 0;
-    const next = () => {
-        if (index >= candidates.length) { img.removeEventListener('error', next); return; }
-        img.src = candidates[index++];
-        avatarSources.set(img, JSON.stringify([data.email_encrypted, data.email, data.nick, img.getAttribute('src')]));
+    if (previous?.key === key) {
+        previous.nick = data.nick;
+        if (!previous.result) {
+            previous.output = initialAvatar(data.nick || '访客');
+            if (img.getAttribute('src') !== previous.output) img.src = previous.output;
+        }
+        return;
+    }
+    const state = { key, source, nick: data.nick, result: '' };
+    avatarSources.set(img, state);
+    const apply = result => {
+        if (avatarSources.get(img) !== state) return;
+        state.result = result;
+        state.output = result || initialAvatar(state.nick || '访客');
+        if (img.getAttribute('src') !== state.output) img.src = state.output;
     };
-    img.addEventListener('error', next);
-    next();
+    if (candidates[0] === '/img/site-avatar.jpg?v=f600c1b0df') { apply(candidates[0]); return; }
+    let cached = avatarResults.get(key);
+    if (cached && Date.now() < cached.expires && cached.result !== undefined) {
+        apply(cached.result);
+        return;
+    }
+    apply('');
+    if (!candidates.length) return;
+    if (!cached || Date.now() >= cached.expires) {
+        cached = { expires: Infinity };
+        cached.promise = (async () => {
+            for (const url of candidates) {
+                const loaded = await new Promise(resolve => {
+                    const probe = new Image();
+                    probe.referrerPolicy = 'no-referrer';
+                    probe.onload = () => resolve(probe.naturalWidth > 0);
+                    probe.onerror = () => resolve(false);
+                    probe.src = url;
+                });
+                if (loaded) return url;
+            }
+            return '';
+        })().then(result => {
+            cached.result = result;
+            cached.expires = result ? Infinity : Date.now() + 60000;
+            return result;
+        });
+        avatarResults.set(key, cached);
+    }
+    cached.promise.then(apply);
 }
 
 function previewAvatar(img, nick, email) {
+    email = email.trim().toLowerCase();
+    const previous = previewAvatars.get(img);
+    img.alt = `${nick}的头像`;
+    if (previous?.email === email) {
+        previous.nick = nick;
+        if (previous.started) enhanceArtalkAvatar(img, { nick, email, email_encrypted: previous.hash });
+        else if (img.getAttribute('src') !== initialAvatar(nick)) img.src = initialAvatar(nick);
+        return previous.timer;
+    }
+    clearTimeout(previous?.timer);
+    avatarSources.delete(img);
+    const state = { email, nick };
+    previewAvatars.set(img, state);
     img.src = initialAvatar(nick);
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return;
-    const hash = emailAvatarHash(email);
-    if (ownerHashes.has(hash)) { img.src = '/img/site-avatar.jpg?v=f600c1b0df'; return; }
-    return setTimeout(() => {
-        if (img.isConnected) enhanceArtalkAvatar(img, { nick, email, email_encrypted: hash });
+    state.hash = emailAvatarHash(email);
+    if (ownerHashes.has(state.hash)) {
+        state.started = true;
+        enhanceArtalkAvatar(img, { nick, email, email_encrypted: state.hash });
+        return;
+    }
+    state.timer = setTimeout(() => {
+        state.timer = undefined;
+        if (img.isConnected && previewAvatars.get(img) === state) {
+            state.started = true;
+            enhanceArtalkAvatar(img, { nick: state.nick, email, email_encrypted: state.hash });
+        }
     }, 500);
+    return state.timer;
 }
 
 function decorateArtalkComment(comment, signal) {
@@ -1056,6 +1119,7 @@ export function blogArtalkPlugin(ctx) {
 
         let preview;
         let previewOpen = false;
+        let previewImage;
         let avatarTimer;
         cleanups.push(() => clearTimeout(avatarTimer));
         const emoticonPlug = manager.getPlugins().find(plug => plug.$panel?.classList.contains('atk-editor-plug-emoticons'));
@@ -1144,7 +1208,7 @@ export function blogArtalkPlugin(ctx) {
             const identity = element('div', 'blog-artalk-preview-identity atk-comment');
             identity.dataset.reply = String(editor.getState() === 'reply');
             const avatar = element('div', 'atk-avatar');
-            const image = element('img', 'blog-artalk-preview-avatar');
+            const image = previewImage ||= element('img', 'blog-artalk-preview-avatar');
             image.alt = `${nick}的头像`;
             const details = element('div', 'atk-main blog-artalk-preview-main');
             const header = element('div', 'atk-header');
@@ -1165,7 +1229,6 @@ export function blogArtalkPlugin(ctx) {
             avatar.append(image);
             identity.append(avatar, details);
             preview.$panel.replaceChildren(identity);
-            clearTimeout(avatarTimer);
             avatarTimer = previewAvatar(image, nick, email);
         }
         const bindPreview = () => {

@@ -1578,6 +1578,11 @@ div#page.nc {
 .read-mode #post > .post-body > :not(#post-info):not(#article-container) { display: none !important; }
 .read-mode #post > .post-body { color: var(--font-color); }
 
+/* 阅读布局直接切换，避免文章卡片沿用普通模式的 300ms 过渡。 */
+.read-mode #post,
+.read-mode #post > .post-body,
+.read-mode #article-container :is(h1, h2, h3, h4, h5, h6) { transition: none; }
+
 .read-mode #page-header {
     display: none !important;
 }
