@@ -49,6 +49,7 @@ function savePreference(key, checked) {
 }
 
 function notify(title, message, type, duration = 5000) {
+    if (message === '内容已自动恢复') message = '已恢复上次输入的评论';
     return globalThis.siteNotify?.({ title, message, type, duration, key: 'comment-submit', variant: 'comment' });
 }
 
