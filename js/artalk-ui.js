@@ -15,7 +15,8 @@ const ownerHashes = new Set([
 ]);
 const preferences = {
     markdown: 'blog-comment-draft-markdown',
-    mail: 'blog-comment-mail-notice'
+    mail: 'blog-comment-mail-notice',
+    private: 'blog-comment-draft-private'
 };
 
 export function artalkOptions(option = {}) {
@@ -374,7 +375,7 @@ function previewAvatar(img, nick, email) {
     return state.timer;
 }
 
-function decorateArtalkComment(comment, signal) {
+function decorateArtalkComment(comment, ctx, signal) {
     const data = comment.getData();
     // Native CommentNode replaces '-' with '/' even in RFC3339 timestamps.
     // Restore only that ISO form so the date and its full tooltip keep the zone.
@@ -394,9 +395,18 @@ function decorateArtalkComment(comment, signal) {
             voteStates.set(comment, state);
             const options = comment.getOpts();
             const getApi = options.getApi;
+            // Native fetch attaches Guest proof to comments, but not votes.
+            // Only this private comment's fixed vote routes need it. Read the
+            // current proof each time, and retain native JWT authentication.
+            const voteHeaders = () => {
+                const user = ctx.getUser();
+                const proof = data.blog_private === true && !user.getData().token
+                    && user.getGuestToken?.(ctx.getConf().server, false);
+                return proof ? { 'X-Artalk-Guest': proof } : {};
+            };
             // The blog backend reports is_up with both GET and POST. Use that
             // response, never infer a visitor's choice from the public count.
-            getApi().request({ path: `/votes/comment/${data.id}`, method: 'GET', format: 'json', signal })
+            getApi().request({ path: `/votes/comment/${data.id}`, method: 'GET', format: 'json', headers: voteHeaders(), signal })
                 .then(response => {
                     if (state.revision || signal.aborted) return;
                     state.isUp = response.data.is_up;
@@ -412,13 +422,14 @@ function decorateArtalkComment(comment, signal) {
                 const native = getApi();
                 const api = Object.create(native);
                 api.votes = { ...native.votes };
-                api.votes.createVote = async (...args) => {
+                api.votes.createVote = async (target, id, choice, value, params = {}) => {
                     state.revision++;
                     const active = comment.getRender().voteBtnUp;
                     active.isLoading = true;
                     active.$el.setAttribute('aria-busy', 'true');
                     try {
-                        const response = await native.votes.createVote(...args);
+                        const response = await native.votes.createVote(target, id, choice, value,
+                            { ...params, headers: { ...params.headers, ...voteHeaders() }, signal });
                         state.isUp = response.data.is_up;
                         if (typeof state.isUp === 'boolean') active.$el.setAttribute('aria-pressed', String(state.isUp));
                         delete active.$el.dataset.commentTooltip;
@@ -891,7 +902,7 @@ export function blogArtalkPlugin(ctx) {
         ctx.updateConf({ editorTravel: false });
         // These known blog builds extend fields without changing the 2.10.1 API.
         // Normalize it before the native mounted check; keep versionCheck on.
-        if (['2.10.1-blog.1', '2.10.1-blog.2', '2.10.1-blog.3'].includes(ctx.getConf().apiVersion)) {
+        if (['2.10.1-blog.1', '2.10.1-blog.2', '2.10.1-blog.3', '2.10.1-blog.4'].includes(ctx.getConf().apiVersion)) {
             ctx.updateConf({ apiVersion: '2.10.1' });
         }
         // LocalStorage restores the bottom draft during native plug mounting,
@@ -909,7 +920,7 @@ export function blogArtalkPlugin(ctx) {
     listen(ctx, 'comment-rendered', comment => {
         const render = comment.getRender();
         const data = comment.getData();
-        decorateArtalkComment(comment, abort.signal);
+        decorateArtalkComment(comment, ctx, abort.signal);
         if (data.blog_deleted === true) {
             render.$content.textContent = '评论已由作者删除。';
             render.$content.classList.add('blog-artalk-deleted');
@@ -924,6 +935,12 @@ export function blogArtalkPlugin(ctx) {
             quoted.classList.add('blog-artalk-plain');
         }
         enhanceArtalkAvatar(render.$el.querySelector('.atk-avatar img'), data);
+        if (data.blog_private === true) {
+            const badge = element('span', 'blog-artalk-private-badge', '悄悄话');
+            badge.prepend(icon('lock'));
+            badge.title = '评论仅发送者和博主可见';
+            render.$el.querySelector('.atk-header').append(badge);
+        }
         const target = render.$replyAt || render.$replyTo;
         const link = target?.querySelector('.atk-nick');
         if (link) {
@@ -1027,7 +1044,24 @@ export function blogArtalkPlugin(ctx) {
         mail.label.title = '有回复时邮件通知我';
         mail.input.setAttribute('aria-label', '邮件提醒：有回复时邮件通知我');
         mail.label.hidden = true;
-        choices.append(markdown.label, mail.label);
+        let privateDraft = false;
+        try { privateDraft = localStorage.getItem(preferences.private) === 'true'; } catch { /* Keep the current choice when storage is unavailable. */ }
+        const whisper = checkbox('blog-artalk-checkbox blog-artalk-private', 'blog_private', '悄悄话', privateDraft, checked => {
+            savePreference(preferences.private, checked);
+            updatePreview();
+        });
+        whisper.label.title = '评论仅发送者和博主可见';
+        whisper.input.setAttribute('aria-label', '悄悄话：评论仅发送者和博主可见');
+        whisper.label.hidden = true;
+        const syncPrivateReply = data => {
+            const locked = data?.blog_private === true;
+            // Cancelling a reply changes its target, not the visibility of the
+            // text still in the composer. Only an explicit uncheck may publish it.
+            if (locked) whisper.input.checked = true;
+            whisper.input.disabled = locked;
+            savePreference(preferences.private, whisper.input.checked);
+        };
+        choices.append(markdown.label, whisper.label, mail.label);
         ui.$bottomLeft.prepend(choices);
 
         const helpButton = button('blog-artalk-markdown-help', '');
@@ -1102,10 +1136,11 @@ export function blogArtalkPlugin(ctx) {
                 if (typeof response.math_captcha !== 'boolean' || typeof response.mail_notice !== 'boolean') {
                     throw new Error('评论服务尚未配置完成，请稍后重试。');
                 }
-                const features = { mathCaptcha: response.math_captcha, mailNotice: response.mail_notice, markdown: response.markdown };
+                const features = { mathCaptcha: response.math_captcha, mailNotice: response.mail_notice, markdown: response.markdown, privateComments: response.private_comments === true };
                 state.features = features;
                 selfDelete.enable(response.self_delete === true);
                 mail.label.hidden = !features.mailNotice;
+                whisper.label.hidden = !features.privateComments;
                 captchaField.hidden = !features.mathCaptcha;
                 ui.$header.dataset.captcha = String(features.mathCaptcha);
                 if (features.mathCaptcha) await loadCaptcha();
@@ -1220,6 +1255,7 @@ export function blogArtalkPlugin(ctx) {
                 name.rel = 'noopener noreferrer nofollow ugc';
             }
             header.append(name);
+            if (whisper.input.checked) header.append(element('span', 'blog-artalk-private-badge', '悄悄话'));
             const body = element('div', 'atk-body');
             const content = element('div', 'atk-content blog-artalk-preview-content');
             if (markdown.input.checked) content.innerHTML = editor.getContentMarked();
@@ -1300,11 +1336,13 @@ export function blogArtalkPlugin(ctx) {
                 } else result = native.apply(this, args);
                 if (method !== 'setReplyComment') {
                     summary.remove();
+                    syncPrivateReply(method === 'setEditComment' ? args[0] : null);
                     if (wasReplying && method === 'resetState' && !state.resetting) ui.$textarea.focus({ preventScroll: true });
                     updatePreview();
                     return result;
                 }
                 const data = args[0];
+                syncPrivateReply(data);
                 const target = args[1];
                 const content = target.querySelector(':scope > .atk-comment > .atk-main > .atk-body > .atk-content');
                 const compact = (content?.textContent || data.content).replace(/\s+/g, ' ').trim();
@@ -1402,6 +1440,10 @@ export function blogArtalkPlugin(ctx) {
                 notify('暂时无法发送', '评论服务尚未连接，请点击钥匙重新连接。', 'warning');
                 return;
             }
+            if (whisper.input.checked && !state.features.privateComments) {
+                notify('暂时无法发送', '当前评论服务尚未启用悄悄话，草稿未发送。', 'warning');
+                return;
+            }
             ui.$el.querySelectorAll('[aria-invalid]').forEach(input => input.removeAttribute('aria-invalid'));
             const errors = validateArtalkForm(activeEditor, state.captcha,
                 state.features.mathCaptcha && activeEditor.getState() !== 'edit');
@@ -1423,7 +1465,8 @@ export function blogArtalkPlugin(ctx) {
                     blog_captcha_token: state.captcha.token,
                     blog_captcha_answer: answer.value.trim(),
                     blog_mail_notice: state.features.mailNotice && mail.input.checked,
-                    blog_markdown: markdown.input.checked
+                    blog_markdown: markdown.input.checked,
+                    blog_private: whisper.input.checked
                 };
                 renderSend('sending');
                 notify('正在发送', '评论正在发送中…', 'info', 0);
@@ -1439,6 +1482,9 @@ export function blogArtalkPlugin(ctx) {
             renderSend('success');
             notify('发送成功', '你的评论已发送。', 'success');
             state.submission = null;
+            whisper.input.checked = false;
+            whisper.input.disabled = false;
+            savePreference(preferences.private, false);
             manager.closePluginPanel();
             if (state.features?.mathCaptcha) loadCaptcha();
         });
