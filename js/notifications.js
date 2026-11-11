@@ -209,7 +209,7 @@
         const badge = event.target.closest?.('#footer .github-badge[data-title]');
         if (!badge || badge.contains(event.relatedTarget)) return;
         window.siteNotify({
-            title: '关于本站',
+            title: badge.getAttribute('href')?.startsWith('https://www.pixiv.net/artworks/') ? '背景插画' : '关于本站',
             message: badge.dataset.title,
             type: 'info',
             duration: 3500,

@@ -1526,8 +1526,9 @@ export function blogArtalkPlugin(ctx) {
                 const body = row.querySelector(':scope > .atk-main > .atk-body');
                 const avatar = row.querySelector(':scope > .atk-avatar');
                 const vote = row.querySelector(':scope > .atk-main > .atk-footer .blog-artalk-vote');
+                const footer = row.querySelector(':scope > .atk-main > .atk-footer');
                 const bottom = Math.max(body.getBoundingClientRect().bottom, avatar.getBoundingClientRect().bottom,
-                    vote?.getBoundingClientRect().bottom || 0);
+                    vote?.getBoundingClientRect().bottom || 0, footer?.getBoundingClientRect().bottom || 0);
                 row.style.setProperty('--reply-highlight-height', `${Math.ceil(bottom - row.getBoundingClientRect().top + 12)}px`);
                 targets.add(target);
             }

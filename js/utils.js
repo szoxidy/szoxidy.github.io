@@ -201,6 +201,7 @@
     getEleTop: ele => ele.getBoundingClientRect().top + window.scrollY,
 
     loadLightbox: ele => {
+      if (!ele.length) return
       const service = GLOBAL_CONFIG.lightbox
 
       if (service === 'medium_zoom') {

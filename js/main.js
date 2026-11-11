@@ -472,9 +472,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let flag = ''
     const scrollTask = btf.rafThrottle(() => {
+      const currentTop = window.scrollY || document.documentElement.scrollTop
+      $header.classList.toggle('scroll-cue-hidden', currentTop > 8)
       if (checkDocumentHeight()) return
 
-      const currentTop = window.scrollY || document.documentElement.scrollTop
       const isDown = scrollDirection(currentTop)
       if (currentTop > 56) {
         if (flag === '') {
@@ -685,10 +686,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const willChangeMode = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'
       if (willChangeMode === 'dark') {
         btf.activateDarkMode()
-        GLOBAL_CONFIG.Snackbar !== undefined && btf.snackbarShow(GLOBAL_CONFIG.Snackbar.day_to_night)
       } else {
         btf.activateLightMode()
-        GLOBAL_CONFIG.Snackbar !== undefined && btf.snackbarShow(GLOBAL_CONFIG.Snackbar.night_to_day)
       }
       btf.saveToLocal.set('theme', willChangeMode, 2)
       handleThemeChange(willChangeMode)

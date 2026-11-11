@@ -50,10 +50,11 @@
         const asideTop = aside.getBoundingClientRect().top;
         const scrollable = ['auto', 'scroll'].includes(getComputedStyle(aside).overflowY);
         if (scrollable) {
-            const top = Math.max(viewportTop + 20, asideTop);
-            const height = Math.floor(bottom - top - 20);
-            if (height > 0) aside.style.setProperty('--aside-visible-height', `${height}px`);
-        } else aside.style.removeProperty('--aside-visible-height');
+            // CSS subtracts the sticky offset so navigation changes take effect
+            // immediately, independent of the two scroll handlers' frame order.
+            const height = Math.floor(viewport?.height || window.innerHeight);
+            if (height > 0) aside.style.setProperty('--aside-viewport-height', `${height}px`);
+        } else aside.style.removeProperty('--aside-viewport-height');
         const remaining = scrollable ? Math.max(0, aside.scrollHeight - aside.clientHeight - aside.scrollTop) : 0;
         aside.style.setProperty('--aside-edge-fade', `${Math.min(48, remaining, aside.clientHeight / 2)}px`);
         aside.style.setProperty('--aside-edge-corner', `${Math.min(20, remaining / 3, aside.clientHeight / 4)}px`);
