@@ -471,6 +471,7 @@
   const isShuoshuo = GLOBAL_CONFIG_SITE.pageType === 'shuoshuo'
   // PJAX executes incoming scripts before committing the new browser URL.
   const canonicalPageKey = new URL(document.querySelector('link[rel="canonical"]').href).pathname
+  const canonicalPageTitle = GLOBAL_CONFIG_SITE.title
   let artalkItem = null
   let destroyed = false
   let pending = null
@@ -507,7 +508,7 @@
           server: service,
           site: configured.site,
           pageKey: isShuoshuo ? pageKey : configured.option.pageKey || pageKey,
-          pageTitle: document.title,
+          pageTitle: canonicalPageTitle,
           darkMode: document.documentElement.getAttribute('data-theme') === 'dark'
         })
         if (GLOBAL_CONFIG.lightbox !== 'null') {
