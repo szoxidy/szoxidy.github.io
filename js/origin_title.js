@@ -1,23 +1,31 @@
 (() => {
     let pageTitle = document.title;
     let titleTimer = null;
+    let showingGreeting = false;
 
     const rememberPageTitle = () => {
+        window.clearTimeout(titleTimer);
+        titleTimer = null;
         pageTitle = document.title;
+        showingGreeting = false;
     };
 
     document.addEventListener('visibilitychange', () => {
         window.clearTimeout(titleTimer);
 
         if (document.hidden) {
-            rememberPageTitle();
+            if (!showingGreeting) pageTitle = document.title;
+            showingGreeting = true;
             document.title = '👀跑哪里去了~';
             return;
         }
 
+        showingGreeting = true;
         document.title = '🐖抓到你啦～';
         titleTimer = window.setTimeout(() => {
             document.title = pageTitle;
+            titleTimer = null;
+            showingGreeting = false;
         }, 2000);
     });
 
