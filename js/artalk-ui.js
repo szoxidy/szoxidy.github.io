@@ -1,4 +1,4 @@
-import { completeArtalkUserAgent, enhanceArtalkAvatar, previewAvatar } from './artalk-profile.js?v=5d9474587c';
+import { completeArtalkUserAgent, enhanceArtalkAvatar, previewAvatar } from './artalk-profile.js?v=76fd0e6e7a';
 import { installArtalkHighlights } from './artalk-reader.js?v=8665ba0197';
 import { animatePanel } from './ui-motion.js?v=70b3e73716';
 import { improveCommentTooltips, refreshCommentTooltip } from './comment-tooltips.js?v=a0189d5080';

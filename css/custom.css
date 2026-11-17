@@ -430,7 +430,7 @@ body.article-entry-pending #body-wrap.post #post {
 }
 
 /* 普通正文首行缩进；图片、按钮和独立公式继续居中或左对齐。 */
-#article-container.post-content > p:not(:has(img, picture, iframe, button, .katex-display, mjx-container[display="true"])) {
+#article-container.post-content > p:not(.algorithm-caption):not(:has(img, picture, iframe, button, .katex-display, mjx-container[display="true"])) {
     text-indent: 2em;
 }
 
@@ -459,6 +459,39 @@ body.article-entry-pending #body-wrap.post #post {
 }
 
 #article-container .sorting-trace code { white-space: nowrap; }
+
+/* 表格只在内容超出宽度时滚动，不为放得下的表格常驻一条空轨道。 */
+#article-container .table-wrap { overflow-x: auto; }
+
+/* 算法图保持文字可读的原始尺寸，窄屏缩小；嵌入的 SVG 跟随本站日夜模式。 */
+#article-container img[src*="/img/algorithms/"] {
+    width: 480px;
+    max-width: 100%;
+    height: auto;
+    color-scheme: light;
+}
+
+#article-container.post-content > p:has(img[src*="/img/algorithms/"]) {
+    margin-bottom: 8px;
+}
+
+#article-container.post-content > .algorithm-caption {
+    margin: 0 auto 24px;
+    color: var(--font-color);
+    font-size: 0.85em;
+    line-height: 1.65;
+    text-align: center;
+    text-indent: 0;
+    opacity: 0.75;
+}
+
+html[data-theme="light"] .fancybox__container img[src*="/img/algorithms/"] {
+    color-scheme: light;
+}
+
+html[data-theme="dark"] :is(#article-container, .fancybox__container) img[src*="/img/algorithms/"] {
+    color-scheme: dark;
+}
 
 @media (max-width: 768px) {
     #article-container.post-content { font-size: 16px; }
@@ -782,6 +815,11 @@ body.article-entry-pending #body-wrap.post #post {
     color: var(--brand-color);
     filter: drop-shadow(0 0 4px var(--brand-glow-near))
         drop-shadow(0 0 10px var(--brand-glow));
+}
+
+/* 文章页的字标稍收小，首页和导航字标保留各自尺寸。 */
+#page-header.post-card-header #site-title .site-name-mark {
+    width: clamp(180px, 30vw, 280px);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1859,7 +1897,7 @@ div#page.nc {
     background: transparent;
 }
 
-/* 无封面文章导航：仅标题文字链接，卡片留白不响应跳转。 */
+/* 无封面文章导航：方向、标题和卡片留白共用一个链接。 */
 #pagination.pagination-text {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1882,6 +1920,8 @@ div#page.nc {
     padding: 20px 24px;
     border: 0;
     -webkit-user-drag: none;
+    color: var(--font-color);
+    text-decoration: none;
     border-radius: 14px;
     background: var(--panel-surface);
     box-shadow: none;
@@ -1892,9 +1932,11 @@ div#page.nc {
     display: none;
 }
 
-#pagination.pagination-text .pagination-title:hover { color: var(--accent-color); }
+#pagination.pagination-text .pagination-related:is(:hover, :focus-visible) .pagination-title {
+    color: var(--accent-color);
+}
 
-#pagination.pagination-text .pagination-title:focus-visible {
+#pagination.pagination-text .pagination-related:focus-visible {
     outline: 2px solid var(--accent-color);
     outline-offset: 4px;
 }
@@ -3382,6 +3424,14 @@ div#page.nc {
     font-weight: 700;
     font-style: normal;
     font-display: swap;
+}
+
+/* 保留源码字符；calt 也会把 ->、!= 等字符合成字形，需要单独关闭。 */
+#article-container :is(pre, code, kbd, samp),
+#artalk-wrap :is(pre, code, textarea),
+#twikoo :is(pre, code, textarea) {
+    font-variant-ligatures: none;
+    font-feature-settings: "liga" 0, "clig" 0, "dlig" 0, "hlig" 0, "calt" 0;
 }
 
 /* 代码块工具：行号、折行、复制、全屏及悬浮提示 */

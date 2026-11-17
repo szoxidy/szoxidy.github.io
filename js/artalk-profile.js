@@ -32,7 +32,7 @@ function avatarCandidates(source, data) {
     const hash = data.email_encrypted || source.match(/\/avatar\/([a-f\d]{32,64})(?:[/?]|$)/i)?.[1] || '';
     if (ownerHashes.has(hash.toLowerCase())) return ['/img/site-avatar.jpg?v=f600c1b0df'];
     const urls = [];
-    if (source && !source.startsWith('data:') && source !== '/img/comment-avatar.svg?v=2dd67ee118') {
+    if (source && !source.startsWith('data:') && source !== '/img/comment-avatar.svg?v=a5c1553b06') {
         const url = new URL(source, location.href);
         if (/^(weavatar\.com|cravatar\.cn|(?:[^.]+\.)?gravatar\.(com|loli\.net))$/.test(url.hostname)) {
             url.searchParams.set('d', '404');
