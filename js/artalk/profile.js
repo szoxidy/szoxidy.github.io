@@ -1,4 +1,6 @@
-// Identity-only state survives PJAX remounts; editor and reader state live in artalk-ui.
+import { emailAvatarHash, initialAvatar, isValidEmail } from '../lib/comment-shared.js?v=94b74f8636';
+
+// Identity-only state survives PJAX remounts; editor and reader state live in artalk/*.
 const avatarSources = new WeakMap();
 const avatarResults = new Map();
 const previewAvatars = new WeakMap();
@@ -50,48 +52,6 @@ function avatarCandidates(source, data) {
     if (qq) urls.push(`https://q1.qlogo.cn/g?b=qq&nk=${qq}&s=640`);
     if (gravatar) urls.push(gravatar);
     return [...new Set(urls)];
-}
-
-function initialAvatar(nick) {
-    const name = nick.trim() || '访客';
-    const letter = Array.from(name)[0].toUpperCase().replace(/[<>&"']/g, char => `&#${char.codePointAt(0)};`);
-    let hash = 0;
-    for (const char of name) hash = (hash * 31 + char.codePointAt(0)) >>> 0;
-    const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80">'
-        + `<rect width="80" height="80" rx="40" fill="hsl(${hash % 360} 55% 42%)"/>`
-        + '<text x="40" y="42" dy=".35em" text-anchor="middle" fill="white"'
-        + ` font-family="sans-serif" font-size="36">${letter}</text></svg>`;
-    return `data:image/svg+xml,${encodeURIComponent(svg)}`;
-}
-
-// The pre-migration preview uses Gravatar's public MD5 identifier for raw mail;
-// published SHA-256 identifiers stay SHA-256 in avatarCandidates above.
-function emailAvatarHash(email) {
-    const bytes = new TextEncoder().encode(email.trim().toLowerCase());
-    const size = Math.ceil((bytes.length + 9) / 64) * 64;
-    const buffer = new Uint8Array(size);
-    buffer.set(bytes);
-    buffer[bytes.length] = 0x80;
-    const view = new DataView(buffer.buffer);
-    view.setUint32(size - 8, bytes.length * 8, true);
-    view.setUint32(size - 4, Math.floor(bytes.length / 0x20000000), true);
-    const shifts = [7, 12, 17, 22, 5, 9, 14, 20, 4, 11, 16, 23, 6, 10, 15, 21];
-    const state = [0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476];
-    for (let offset = 0; offset < size; offset += 64) {
-        let [a, b, c, d] = state;
-        for (let i = 0; i < 64; i++) {
-            const round = Math.floor(i / 16);
-            const mix = round === 0 ? (b & c) | (~b & d) : round === 1 ? (d & b) | (~d & c) : round === 2 ? b ^ c ^ d : c ^ (b | ~d);
-            const word = round === 0 ? i : round === 1 ? (5 * i + 1) % 16 : round === 2 ? (3 * i + 5) % 16 : (7 * i) % 16;
-            const sum = (a + mix + Math.floor(Math.abs(Math.sin(i + 1)) * 0x100000000) + view.getUint32(offset + word * 4, true)) | 0;
-            const shift = shifts[round * 4 + i % 4];
-            const next = (b + ((sum << shift) | (sum >>> (32 - shift)))) | 0;
-            [a, b, c, d] = [d, next, b, c];
-        }
-        [a, b, c, d].forEach((value, index) => { state[index] = (state[index] + value) | 0; });
-    }
-    return state.map(word => [0, 8, 16, 24].map(shift =>
-        ((word >>> shift) & 0xff).toString(16).padStart(2, '0')).join('')).join('');
 }
 
 export function enhanceArtalkAvatar(img, data = {}) {
@@ -169,7 +129,7 @@ export function previewAvatar(img, nick, email) {
     const state = { email, nick };
     previewAvatars.set(img, state);
     img.src = initialAvatar(nick);
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return;
+    if (!email || !isValidEmail(email)) return;
     state.hash = emailAvatarHash(email);
     if (ownerHashes.has(state.hash)) {
         state.started = true;

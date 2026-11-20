@@ -2,7 +2,6 @@
     'use strict';
 
     const dayLength = 86_400_000;
-    const visibleDays = 15;
     let activeCard = null;
     let snapshot = null;
     let loading = null;
@@ -26,40 +25,43 @@
         return Number.isFinite(timestamp) && new Date(timestamp).toISOString().slice(0, 10) === value ? timestamp : NaN;
     }
 
-    function selectBlog(config, daily) {
+    function readBlogHistory(config, daily, rangeDays) {
         const matches = (config.publicGroupList || []).flatMap(group => group.monitorList || [])
             .filter(monitor => monitor.name === 'Blog');
         if (matches.length !== 1 || !Number.isSafeInteger(matches[0].id) || matches[0].id <= 0) throw new Error('Invalid Blog monitor');
         const histories = Array.isArray(daily.monitors) ? daily.monitors.filter(item => item.id === matches[0].id) : [];
-        if (daily.ok !== true || daily.range?.days !== 30 || histories.length !== 1) throw new Error('Missing daily history');
+        if (daily.ok !== true || daily.range?.days !== rangeDays || histories.length !== 1) throw new Error('Missing daily history');
         const start = dateTimestamp(daily.range.from);
         const end = dateTimestamp(daily.range.to);
-        if (!Number.isFinite(start) || !Number.isFinite(end) || end - start !== 29 * dayLength) throw new Error('Invalid history range');
+        if (!Number.isFinite(start) || !Number.isFinite(end) || end - start !== (rangeDays - 1) * dayLength) throw new Error('Invalid history range');
         const today = Math.floor(Date.now() / dayLength) * dayLength;
         if (Math.abs(end - today) > dayLength) throw new Error('History is stale');
         const history = histories[0];
         if (!Array.isArray(history.days)) throw new Error('Invalid daily records');
         const records = new Map();
+        let totalUp = 0;
+        let totalDown = 0;
         for (const record of history.days) {
             const timestamp = dateTimestamp(record.date);
-            if (!Number.isFinite(timestamp) || timestamp < start || timestamp > end || records.has(record.date)) throw new Error('Invalid record date');
-            records.set(record.date, { ...record, ratio: percentage(record.up, record.down) });
+            if (!Number.isFinite(timestamp) || timestamp < start || timestamp > end || records.has(timestamp)) throw new Error('Invalid record date');
+            records.set(timestamp, { ...record, ratio: percentage(record.up, record.down) });
+            totalUp += record.up;
+            totalDown += record.down;
         }
-        const totalUp = history.days.reduce((sum, record) => sum + record.up, 0);
-        const totalDown = history.days.reduce((sum, record) => sum + record.down, 0);
         if (totalUp !== history.totalUp || totalDown !== history.totalDown) throw new Error('Incomplete daily totals');
+        return { end, records, rangeDays };
+    }
 
-        // Upstream supports 30/60/90 days. Both bars and percentage use only
-        // the last 15 calendar days, including gaps without measurements.
+    function summarizeWindow({ end, records }, visibleDays) {
         let up = 0;
         let down = 0;
         const days = Array.from({ length: visibleDays }, (_, index) => {
-            const date = new Date(end - (visibleDays - 1 - index) * dayLength).toISOString().slice(0, 10);
-            const record = records.get(date);
+            const timestamp = end - (visibleDays - 1 - index) * dayLength;
+            const record = records.get(timestamp);
             up += record?.up ?? 0;
             down += record?.down ?? 0;
             return {
-                date, ratio: record?.ratio ?? null,
+                date: new Date(timestamp).toISOString().slice(0, 10), ratio: record?.ratio ?? null,
                 avgPing: record?.ratio != null ? record.avgPing : null,
                 minPing: record?.ratio != null ? record.minPing : null,
                 maxPing: record?.ratio != null ? record.maxPing : null,
@@ -68,8 +70,10 @@
         return { uptime: percentage(up, down), days };
     }
 
-    function render(card, data, animate = false) {
-        if (data.error) {
+    function render(card, history, animate = false) {
+        // HTML from before status_days was introduced always showed fifteen days.
+        const visibleDays = Number(card.dataset.statusDays ?? 15);
+        if (history.error || !Number.isInteger(visibleDays) || visibleDays < 1 || visibleDays > history.rangeDays) {
             card.querySelector('[data-status-uptime]').textContent = '—';
             card.querySelector('[data-status-history]').hidden = true;
             card.querySelector('[data-status-dates]').hidden = true;
@@ -77,10 +81,11 @@
             card.querySelector('[data-status-refresh]').title = '暂时无法获取，点击重试';
             return;
         }
+        const data = summarizeWindow(history, visibleDays);
         const uptime = card.querySelector('[data-status-uptime]');
         uptime.textContent = formatUptime(data.uptime);
-        uptime.title = '最近 15 天按实际检测次数统计；无数据日期不计入可用率';
-        const history = card.querySelector('[data-status-history]');
+        uptime.title = `最近 ${visibleDays} 天按实际检测次数统计；无数据日期不计入可用率`;
+        const bars = card.querySelector('[data-status-history]');
         const fragment = document.createDocumentFragment();
         for (const [index, day] of data.days.entries()) {
             const bar = document.createElement('span');
@@ -101,31 +106,32 @@
             bar.tabIndex = 0;
             fragment.append(bar);
         }
-        history.replaceChildren(fragment);
-        history.hidden = false;
+        bars.replaceChildren(fragment);
+        bars.hidden = false;
         card.querySelector('[data-status-start]').textContent = `${data.days[0].date.slice(5)} · UTC`;
         card.querySelector('[data-status-end]').textContent = data.days.at(-1).date.slice(5);
         card.querySelector('[data-status-dates]').hidden = false;
         card.querySelector('[data-status-updated]').textContent = '刷新';
-        card.querySelector('[data-status-refresh]').title = '重新获取最近 15 天的状态数据';
+        card.querySelector('[data-status-refresh]').title = `重新获取最近 ${visibleDays} 天的状态数据`;
     }
 
-    async function load(api, animate) {
-        const requestedCard = activeCard;
+    async function load(requestedCard, animate) {
         const controller = new AbortController();
         const timeout = window.setTimeout(() => controller.abort(), 12_000);
         try {
             const page = new URL(window.location.href);
             const local = ['localhost', '127.0.0.1', '[::1]'].includes(page.hostname);
-            const base = new URL(local ? '/__blog-status/' : api, page);
-            const data = await Promise.all(['config', 'daily?days=30'].map(async path => {
+            const { statusApi, statusPreview = '/__blog-status/', statusRange = '30' } = requestedCard.dataset;
+            const rangeDays = Number(statusRange);
+            const base = new URL(local ? statusPreview : statusApi, page);
+            const [config, daily] = await Promise.all(['config', `daily?days=${rangeDays}`].map(async path => {
                 const response = await fetch(new URL(path, base), {
                     signal: controller.signal, credentials: 'omit', cache: 'no-store', headers: { Accept: 'application/json' },
                 });
                 if (!response.ok) throw new Error(`Status API returned ${response.status}`);
                 return response.json();
             }));
-            snapshot = selectBlog(...data);
+            snapshot = readBlogHistory(config, daily, rangeDays);
         } catch (_) {
             controller.abort();
             snapshot = { error: true };
@@ -139,13 +145,13 @@
         const button = card.querySelector('[data-status-refresh]');
         button.disabled = busy;
         button.setAttribute('aria-busy', String(busy));
-        card.querySelector('[data-status-updated]').textContent = busy ? '刷新中' : snapshot?.error ? '重试' : '刷新';
+        if (busy) card.querySelector('[data-status-updated]').textContent = '刷新中';
     }
 
     function refresh(animate = false) {
         if (loading || !activeCard?.isConnected) return;
         setRefreshing(activeCard, true);
-        loading = load(activeCard.dataset.statusApi, animate).finally(() => {
+        loading = load(activeCard, animate).finally(() => {
             loading = null;
             if (activeCard?.isConnected) setRefreshing(activeCard, false);
         });

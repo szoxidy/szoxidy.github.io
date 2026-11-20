@@ -22,16 +22,22 @@ export function installArtalkHighlights(root) {
             if (!bounds.has(node)) bounds.set(node, node.getBoundingClientRect());
             return bounds.get(node);
         };
-        const actions = [...rows].map(row => ({ row, top: Math.max(0,
-            rect(row.querySelector(':scope > .atk-main > .atk-body')).bottom - rect(row).top - 24) }));
+        const actions = [...rows].map(row => ({
+            row,
+            top: Math.max(0, rect(row.querySelector(':scope > .atk-main > .atk-body')).bottom - rect(row).top - 24)
+        }));
         const highlights = [...references].map(target => {
             const row = target.querySelector(':scope > .atk-comment');
             const body = row.querySelector(':scope > .atk-main > .atk-body');
             const avatar = row.querySelector(':scope > .atk-avatar');
             const vote = row.querySelector(':scope > .atk-main > .atk-footer .blog-artalk-vote');
             const footer = row.querySelector(':scope > .atk-main > .atk-footer');
-            const bottom = Math.max(rect(body).bottom, rect(avatar).bottom,
-                vote ? rect(vote).bottom : 0, footer ? rect(footer).bottom : 0);
+            const bottom = Math.max(
+                rect(body).bottom,
+                rect(avatar).bottom,
+                vote ? rect(vote).bottom : 0,
+                footer ? rect(footer).bottom : 0
+            );
             return { row, height: Math.ceil(bottom - rect(row).top + 12) };
         });
         for (const row of activeRows) if (!rows.has(row)) row.classList.remove('blog-artalk-row-active');
