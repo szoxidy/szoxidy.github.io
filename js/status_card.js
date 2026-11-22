@@ -84,7 +84,7 @@
         const data = summarizeWindow(history, visibleDays);
         const uptime = card.querySelector('[data-status-uptime]');
         uptime.textContent = formatUptime(data.uptime);
-        uptime.title = `最近 ${visibleDays} 天按实际检测次数统计；无数据日期不计入可用率`;
+        uptime.title = `近 ${visibleDays} 天可用率`;
         const bars = card.querySelector('[data-status-history]');
         const fragment = document.createDocumentFragment();
         for (const [index, day] of data.days.entries()) {

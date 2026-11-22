@@ -1,4 +1,4 @@
-import { blogArtalkJSON } from './api.js?v=076db1c676';
+import { blogArtalkJSON, formatCommentError } from './api.js?v=4fc545aa71';
 import { button, element, notifyComment } from './config.js?v=3998dd6238';
 
 // Guest self-deletion state machine: checks server ownership with native guest
@@ -31,8 +31,8 @@ export function installArtalkSelfDelete(ctx, root, on, listen, signal, refreshLi
             return;
         }
         if (!control) {
-            control = button('blog-artalk-delete', '删除自己的评论');
-            control.setAttribute('aria-label', '删除自己的评论');
+            control = button('blog-artalk-delete', '删除');
+            control.setAttribute('aria-label', '删除评论');
             control.dataset.commentId = String(data.id);
             actions.append(control);
         }
@@ -56,14 +56,14 @@ export function installArtalkSelfDelete(ctx, root, on, listen, signal, refreshLi
                     { headers: { 'X-Artalk-Guest': token } }
                 );
                 if (signal.aborted || !enabled || proof() !== token) return;
-                if (!Array.isArray(result.ids)) throw new Error('评论归属响应无效，请重试。');
+                if (!Array.isArray(result.ids)) throw new Error('暂时无法获取评论操作状态，请稍后重试。');
                 owned = new Set(result.ids);
                 ownedProof = token;
             } catch (error) {
                 if (signal.aborted) return;
                 owned.clear();
                 ownedProof = undefined;
-                notifyComment('无法确认评论归属', error.message, 'error');
+                notifyComment('提示', formatCommentError(error, '暂时无法获取评论操作状态，请稍后重试。'), 'error');
             } finally {
                 pendingRead = null;
                 if (!signal.aborted) {
@@ -85,7 +85,7 @@ export function installArtalkSelfDelete(ctx, root, on, listen, signal, refreshLi
         if (!enabled || !token || token !== ownedProof || !owned.has(id)) return;
         const panel = element('div', 'blog-artalk-delete-confirm');
         panel.setAttribute('role', 'alertdialog');
-        const caption = element('p', '', '删除自己的这条评论？已有回复会保留。');
+        const caption = element('p', '', '确定删除这条评论？已有回复会保留。');
         caption.id = `blog-artalk-delete-${crypto.randomUUID()}`;
         panel.setAttribute('aria-labelledby', caption.id);
         const cancel = button('blog-artalk-delete-cancel', '取消');
@@ -114,7 +114,7 @@ export function installArtalkSelfDelete(ctx, root, on, listen, signal, refreshLi
                 );
                 if (signal.aborted) return;
                 if (result.comment?.id !== id || result.comment.blog_deleted !== true) {
-                    throw new Error('删除响应无效，请刷新后确认。');
+                    throw new Error('删除失败，请刷新页面确认。');
                 }
                 owned.delete(id);
                 closeDialog(false);
@@ -122,7 +122,7 @@ export function installArtalkSelfDelete(ctx, root, on, listen, signal, refreshLi
                 await refreshList();
                 if (!signal.aborted) notifyComment('删除成功', '评论已由作者删除。', 'success');
             } catch (error) {
-                if (!signal.aborted) notifyComment('删除失败', error.message || '删除失败，请重试。', 'error');
+                if (!signal.aborted) notifyComment('删除失败', formatCommentError(error, '删除失败，请重试。'), 'error');
             } finally {
                 deleting.delete(id);
                 current.busy = false;

@@ -78,6 +78,36 @@ export function bridgeArtalkPanels(manager) {
     return () => { if (manager.openPluginPanel === open) manager.openPluginPanel = original; };
 }
 
+const KNOWN_BACKEND_ERRORS = new Map([
+    ['guest ownership proof required', '无法确认评论权限，请刷新页面后重试。'],
+    ['cannot read owned comments', '暂时无法读取可删除的评论。'],
+    ['page key required', '缺少页面信息，请刷新后重试。'],
+    ['page key or site scope required', '缺少页面信息，请刷新后重试。'],
+    ['invalid comment id', '评论编号无效。'],
+    ['comment not found', '未找到这条评论。'],
+    ['guest does not own this comment', '只能删除自己发表的评论。'],
+    ['cannot change comment withdrawal', '暂时无法完成删除，请稍后重试。']
+]);
+
+// Map known backend English errors and raw browser network/parse errors into
+// clear reader-facing Chinese copy while keeping real Chinese backend messages.
+export function formatCommentError(error, fallback = '操作失败，请稍后重试。') {
+    const raw = typeof error === 'string'
+        ? error.trim()
+        : String(error?.message || error?.msg || '').trim();
+    if (!raw) return fallback;
+    const mapped = KNOWN_BACKEND_ERRORS.get(raw.toLowerCase());
+    if (mapped) return mapped;
+    if (/^(?:failed to fetch|load failed|networkerror\b|the operation was aborted|signal is aborted)/i.test(raw)) {
+        return '网络连接失败，请稍后重试。';
+    }
+    if (/^HTTP\s+\d+/i.test(raw) || /^Unexpected token\b|^JSON\.parse\b/i.test(raw)) {
+        return fallback;
+    }
+    if (!/[一-鿿]/.test(raw)) return fallback;
+    return raw;
+}
+
 export async function blogArtalkJSON(server, path, query = {}, signal, options = {}) {
     const base = server.replace(/\/+$/, '').replace(/\/api(?:\/v2)?$/, '');
     const url = new URL(`${base}/api/blog/${path}`, location.href);
@@ -88,7 +118,15 @@ export async function blogArtalkJSON(server, path, query = {}, signal, options =
         credentials: 'omit',
         headers: { Accept: 'application/json', ...options.headers }
     });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.msg || data.message || `评论服务返回 ${response.status}`);
+    let data = null;
+    try {
+        data = await response.json();
+    } catch {
+        if (!response.ok) throw new Error('评论服务暂时不可用，请稍后重试。');
+        throw new Error('评论服务响应异常，请稍后重试。');
+    }
+    if (!response.ok) {
+        throw new Error(formatCommentError(data?.msg || data?.message, '评论服务暂时不可用，请稍后重试。'));
+    }
     return data;
 }

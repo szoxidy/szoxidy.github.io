@@ -1,4 +1,5 @@
 import { pageNumbers } from '../comment-pagination.js?v=53ae2c2265';
+import { formatCommentError } from './api.js?v=4fc545aa71';
 import { button, element, icon } from './config.js?v=3998dd6238';
 
 const REPLIES_PER_PAGE = 5;
@@ -17,7 +18,7 @@ export function installArtalkPagination(ctx, listen, signal) {
     const searchToggle = button('blog-artalk-list-tool', '', 'magnifying-glass');
     searchToggle.setAttribute('aria-label', '搜索评论');
     searchToggle.setAttribute('aria-expanded', 'false');
-    searchToggle.title = '搜索本页评论正文或完整昵称（含回复）';
+    searchToggle.title = '搜索评论';
     const refresh = button('blog-artalk-list-tool', '', 'sync');
     refresh.setAttribute('aria-label', '刷新评论');
     refresh.title = '刷新评论';
@@ -40,7 +41,7 @@ export function installArtalkPagination(ctx, listen, signal) {
     const searchInput = element('input');
     searchInput.type = 'search';
     searchInput.maxLength = 100;
-    searchInput.placeholder = '搜索评论';
+    searchInput.placeholder = '搜索评论内容或昵称';
     searchInput.setAttribute('aria-label', '搜索评论');
     const clearSearch = button('blog-artalk-search-clear', '', 'xmark');
     clearSearch.setAttribute('aria-label', '清空搜索');
@@ -97,7 +98,7 @@ export function installArtalkPagination(ctx, listen, signal) {
         try {
             const response = await ctx.getApi().comments.getComments(request, { signal });
             if (signal.aborted) return;
-            if (!response.data.page) throw new Error('评论响应缺少页面信息，请重试。');
+            if (!response.data.page) throw new Error('评论加载失败，请重试。');
             ctx.updateConf({ flatMode: params.flatMode });
             data.setListLastFetch({ params, data: response.data });
             data.clearComments();
@@ -106,7 +107,7 @@ export function installArtalkPagination(ctx, listen, signal) {
             ctx.trigger('list-fetched', { params, data: response.data });
         } catch (failure) {
             if (signal.aborted) return;
-            error = failure.message || '评论加载失败，请重试。';
+            error = formatCommentError(failure, '评论加载失败，请重试。');
             ctx.getEl().dataset.commentState = 'error';
         } finally {
             busy = false;
@@ -183,7 +184,7 @@ export function installArtalkPagination(ctx, listen, signal) {
     };
 
     listen(ctx, 'list-fetch', () => { busy = true; error = ''; render(); });
-    listen(ctx, 'list-failed', failure => { busy = false; error = failure.msg || '评论加载失败，请重试。'; render(); });
+    listen(ctx, 'list-failed', failure => { busy = false; error = formatCommentError(failure, '评论加载失败，请重试。'); render(); });
     listen(ctx, 'list-fetched', () => { busy = false; render(); });
     listen(ctx, 'list-loaded', render);
     listen(ctx, 'updated', render);

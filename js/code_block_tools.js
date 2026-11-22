@@ -314,11 +314,92 @@ const setFullpageControls = (figure, toolbar, fullpageButton, isFullpage) => {
     }
 };
 
+const modalAttributeNames = ['role', 'aria-modal', 'aria-label', 'tabindex'];
+const focusableSelector = 'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+const isFocusableElement = element => {
+    if (!element || element.hidden || element.inert || element.getAttribute('aria-hidden') === 'true') {
+        return false;
+    }
+    if (element.closest?.('[hidden], [inert], [aria-hidden="true"]')) {
+        return false;
+    }
+    const style = window.getComputedStyle(element);
+    return style.display !== 'none' && style.visibility !== 'hidden';
+};
+
+const getFullpageFocusables = figure => Array.from(figure.querySelectorAll(focusableSelector)).filter(isFocusableElement);
+
+const applyFullpageModalAttributes = figure => {
+    const previous = modalAttributeNames.map(name => [name, figure.getAttribute(name)]);
+    const lang = figure.querySelector(':scope > .highlight-tools .code-lang')?.textContent?.trim();
+    figure.setAttribute('role', 'dialog');
+    figure.setAttribute('aria-modal', 'true');
+    figure.setAttribute('aria-label', lang ? `${lang} 全屏代码` : '全屏代码');
+    figure.setAttribute('tabindex', '-1');
+    return () => {
+        for (const [name, value] of previous) {
+            if (value === null) figure.removeAttribute(name);
+            else figure.setAttribute(name, value);
+        }
+    };
+};
+
+const isolateFullpageBackground = figure => {
+    const isolated = [];
+    let current = figure;
+    while (current && current !== document.body) {
+        const parent = current.parentElement;
+        if (!parent) break;
+        for (const sibling of Array.from(parent.children || [])) {
+            if (sibling === current || sibling.id === 'site-notifications' || sibling.classList?.contains('code-fullpage-placeholder')) {
+                continue;
+            }
+            isolated.push([sibling, Boolean(sibling.inert)]);
+            sibling.inert = true;
+        }
+        current = parent;
+    }
+    return () => {
+        for (const [node, wasInert] of isolated) {
+            node.inert = wasInert;
+        }
+    };
+};
+
+const trapFullpageTab = event => {
+    if (!activeFullpage) return;
+    const { figure } = activeFullpage;
+    const focusables = getFullpageFocusables(figure);
+    if (!focusables.length) {
+        event.preventDefault();
+        figure.focus?.({ preventScroll: true });
+        return;
+    }
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    const current = document.activeElement;
+    if (!figure.contains(current)) {
+        event.preventDefault();
+        (event.shiftKey ? last : first).focus?.({ preventScroll: true });
+        return;
+    }
+    if (event.shiftKey && (current === first || current === figure)) {
+        event.preventDefault();
+        last.focus?.({ preventScroll: true });
+    } else if (!event.shiftKey && current === last) {
+        event.preventDefault();
+        first.focus?.({ preventScroll: true });
+    }
+};
+
 const finishFullpage = (state, restorePosition) => {
     state.animation?.cancel();
     const { figure, toolbar, button, panel, placeholder, wasClosed, wasExpanded,
-        maxHeight, scrollX, scrollY, bodyOverflow, scrollbarGutter } = state;
+        maxHeight, scrollX, scrollY, bodyOverflow, scrollbarGutter, restoreModal, restoreBackground } = state;
     activeFullpage = null;
+    restoreBackground?.();
+    restoreModal?.();
     figure.classList.remove('code-fullpage');
     toolbar.classList.toggle('closed', wasClosed);
     figure.classList.toggle('code-height-expanded', wasExpanded);
@@ -383,6 +464,10 @@ const enterFullpage = (figure, toolbar, button) => {
         scrollbarGutter: document.documentElement.style.scrollbarGutter,
     };
     figure.before(placeholder);
+    const restoreModal = applyFullpageModalAttributes(figure);
+    const restoreBackground = isolateFullpageBackground(figure);
+    activeFullpage.restoreModal = restoreModal;
+    activeFullpage.restoreBackground = restoreBackground;
     document.documentElement.style.scrollbarGutter = 'stable';
     document.body.style.overflow = 'hidden';
     toolbar.classList.remove('closed');
@@ -400,10 +485,12 @@ const enterFullpage = (figure, toolbar, button) => {
         activeFullpage.animation.onfinish = () => scheduleLineSync(figure);
     }
     setFullpageControls(figure, toolbar, button, true);
+    if (isFocusableElement(button)) button.focus?.({ preventScroll: true });
+    else figure.focus?.({ preventScroll: true });
     scheduleLineSync(figure);
 };
 
-const enhanceFigure = figure => {
+export const enhanceFigure = figure => {
     const toolbar = figure.querySelector(':scope > .highlight-tools');
 
     if (!toolbar || toolbar.dataset.codeToolsEnhanced === 'true') {
@@ -527,9 +614,12 @@ document.addEventListener('pjax:complete', () => {
     scheduleEnhance();
 });
 document.addEventListener('keydown', event => {
-    if (event.key === 'Escape' && activeFullpage) {
+    if (!activeFullpage) return;
+    if (event.key === 'Escape') {
         event.preventDefault();
         exitFullpage();
+    } else if (event.key === 'Tab') {
+        trapFullpageTab(event);
     }
 });
 document.addEventListener('click', handleCodeCopy, true);

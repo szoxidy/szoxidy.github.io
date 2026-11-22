@@ -1,6 +1,6 @@
-import { blogArtalkJSON, bridgeArtalkEditorApi } from './artalk/api.js?v=076db1c676';
-import { decorateArtalkComment } from './artalk/comment-node.js?v=55c164046c';
-import { installArtalkComposer, validateArtalkForm } from './artalk/composer.js?v=1efde307c9';
+import { blogArtalkJSON, bridgeArtalkEditorApi, formatCommentError } from './artalk/api.js?v=4fc545aa71';
+import { decorateArtalkComment } from './artalk/comment-node.js?v=b14a877567';
+import { installArtalkComposer, validateArtalkForm } from './artalk/composer.js?v=1adbd7959b';
 import {
     COMPATIBLE_API_VERSIONS,
     UPSTREAM_API_VERSION,
@@ -8,9 +8,9 @@ import {
     normalizeCompatApiVersion,
     notifyComment
 } from './artalk/config.js?v=3998dd6238';
-import { installArtalkPagination, installArtalkReplyPages } from './artalk/list-pagination.js?v=a524437d06';
+import { installArtalkPagination, installArtalkReplyPages } from './artalk/list-pagination.js?v=9fbd72995e';
 import { completeArtalkUserAgent, enhanceArtalkAvatar } from './artalk/profile.js?v=a555dc6842';
-import { installArtalkSelfDelete } from './artalk/self-delete.js?v=fa9ece29f2';
+import { installArtalkSelfDelete } from './artalk/self-delete.js?v=91ce8e6c33';
 
 // Artalk 2.10.1 integration entrypoint. Keeps native submission/reply/data
 // ownership while delegating domain concerns to focused modules under artalk/.
@@ -97,5 +97,6 @@ export {
     bridgeArtalkEditorApi,
     completeArtalkUserAgent,
     enhanceArtalkAvatar,
+    formatCommentError,
     validateArtalkForm
 };

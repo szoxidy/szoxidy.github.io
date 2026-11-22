@@ -1,4 +1,5 @@
 import { formatCommentDate, normalizeIsoDateString, parseUserAgentBadge } from '../lib/comment-shared.js?v=94b74f8636';
+import { formatCommentError } from './api.js?v=4fc545aa71';
 import { element, icon, notifyComment } from './config.js?v=3998dd6238';
 import { enhanceArtalkAvatar } from './profile.js?v=a555dc6842';
 
@@ -81,7 +82,7 @@ function enhanceVoteControl(comment, ctx, signal) {
 
     vote.$el.classList.add('blog-artalk-vote');
     if (typeof state.isUp === 'boolean') vote.$el.setAttribute('aria-pressed', String(state.isUp));
-    vote.setError = message => notifyComment('点赞失败', state.error?.message || message, 'error');
+    vote.setError = message => notifyComment('点赞失败', formatCommentError(state.error || message, '点赞失败，请稍后重试。'), 'error');
     vote.updateText(() => {
         const count = String(comment.getData().vote_up || 0);
         markAction(vote.$el, `点赞 ${count}`);

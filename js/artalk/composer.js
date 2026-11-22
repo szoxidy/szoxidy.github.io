@@ -6,7 +6,7 @@ import {
 } from '../lib/comment-shared.js?v=94b74f8636';
 import { readBooleanPref, writeBooleanPref } from '../lib/storage.js?v=3545997d60';
 import { animatePanel } from '../ui-motion.js?v=70b3e73716';
-import { blogArtalkJSON, bridgeArtalkEditorApi, bridgeArtalkPanels } from './api.js?v=076db1c676';
+import { blogArtalkJSON, bridgeArtalkEditorApi, bridgeArtalkPanels, formatCommentError } from './api.js?v=4fc545aa71';
 import { ARTALK_PREFERENCE_KEYS, button, checkbox, element, icon, notifyComment } from './config.js?v=3998dd6238';
 import { completeArtalkUserAgent, previewAvatar } from './profile.js?v=a555dc6842';
 import { installArtalkHighlights } from './reader.js?v=c41d2f086f';
@@ -490,7 +490,7 @@ export function installArtalkComposer(ctx, { root, on, listen, cleanups, signal,
                 signal
             );
             if (!isAlive() || request !== state.captchaRequest) return;
-            if (!captcha.token || !captcha.question) throw new Error('验证码响应缺少题目，请重新加载');
+            if (!captcha.token || !captcha.question) throw new Error('验证码加载失败，请点击重试。');
             state.captcha.token = captcha.token;
             answer.disabled = false;
             const question = /\?\s*$/.test(captcha.question) ? captcha.question : `${captcha.question} = ?`;
@@ -503,7 +503,7 @@ export function installArtalkComposer(ctx, { root, on, listen, cleanups, signal,
             answer.placeholder = '点击钥匙重试';
             captchaField.dataset.commentTooltip = '点击钥匙重试';
             refreshCommentTooltip(root);
-            notifyComment('验证码加载失败', error.message || '验证码加载失败，请重试。', 'error');
+            notifyComment('验证码加载失败', formatCommentError(error, '验证码加载失败，请重试。'), 'error');
         } finally {
             if (isAlive() && request === state.captchaRequest) reload.disabled = false;
         }
@@ -514,7 +514,7 @@ export function installArtalkComposer(ctx, { root, on, listen, cleanups, signal,
             const response = await blogArtalkJSON(conf.server, 'config', {}, signal);
             if (!isAlive()) return;
             if (typeof response.math_captcha !== 'boolean' || typeof response.mail_notice !== 'boolean') {
-                throw new Error('评论服务尚未配置完成，请稍后重试。');
+                throw new Error('评论服务暂时不可用，请稍后重试。');
             }
             const features = {
                 mathCaptcha: response.math_captcha,
@@ -531,7 +531,8 @@ export function installArtalkComposer(ctx, { root, on, listen, cleanups, signal,
             if (features.mathCaptcha) await loadCaptcha();
         } catch (error) {
             if (!isAlive()) return;
-            notifyComment('暂时无法发送', `${error.message || '评论服务连接失败'}，点击钥匙重新连接。`, 'warning');
+            const reason = formatCommentError(error, '评论服务连接失败').replace(/[。.]$/, '');
+            notifyComment('暂时无法发送', `${reason}，点击钥匙重新连接。`, 'warning');
             answer.placeholder = '点击钥匙重试';
         }
     };
@@ -549,7 +550,7 @@ export function installArtalkComposer(ctx, { root, on, listen, cleanups, signal,
         if (error && state.phase === 'sending') renderSend('error');
         notifyComment(
             error ? '评论发送失败' : '评论提示',
-            state.failure?.message || message,
+            error ? formatCommentError(state.failure || message, '评论发送失败，请稍后重试。') : message,
             error ? 'error' : type === 's' ? 'success' : type === 'w' ? 'warning' : 'info'
         );
         state.failure = null;
@@ -588,7 +589,7 @@ export function installArtalkComposer(ctx, { root, on, listen, cleanups, signal,
             return;
         }
         if (whisper.input.checked && !state.features.privateComments) {
-            notifyComment('暂时无法发送', '当前评论服务尚未启用悄悄话，草稿未发送。', 'warning');
+            notifyComment('暂时无法发送', '当前暂不支持悄悄话，评论未发送。', 'warning');
             return;
         }
         ui.$el.querySelectorAll('[aria-invalid]').forEach(input => input.removeAttribute('aria-invalid'));
